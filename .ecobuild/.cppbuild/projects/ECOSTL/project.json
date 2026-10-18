@@ -1,6 +1,14 @@
 {
   "data": {
-    "dependencies": {},
+    "dependencies": {
+      "cf5eecef65be4f8d981e658fc665b2e4": {
+        "kind": "project",
+        "values": {
+          "project_guid": "ec41152a-a7e6-4c4d-b618-61a7fbd9b2cd",
+          "project_type": "static_library"
+        }
+      }
+    },
     "guid": "6610f855-4b8a-4f59-99cf-ac4f07a52119",
     "initial_type": "static_library",
     "name": "ECOSTL",
