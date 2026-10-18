@@ -14,13 +14,25 @@
       "test": "test.cpp",
       "unit_test": "unit_test.cpp"
     },
+    "git_sources": {
+      "ECOCppLogger": {
+        "path": ".ecobuild/.cppbuild",
+        "revision": "86f68d87bc98cf46adff548475cd99e031964e2c",
+        "url": "https://github.com/superFUKA/ECOCppLogger.git"
+      }
+    },
     "main_project": "ECOSTL",
     "name": "ECOSTL",
     "projects": {
       "ECOSTL": "../../ECOSTL",
       "ECOSTLTest": "../../ECOSTLTest"
     },
-    "references": {},
+    "references": {
+      "ec41152a-a7e6-4c4d-b618-61a7fbd9b2cd": {
+        "project_guid": "ec41152a-a7e6-4c4d-b618-61a7fbd9b2cd",
+        "solution_directory": "../../deps/ECOCppLogger/.ecobuild/.cppbuild"
+      }
+    },
     "solution_folders": {
       "linked_projects": "LinkedProjects",
       "project_folders": {},
