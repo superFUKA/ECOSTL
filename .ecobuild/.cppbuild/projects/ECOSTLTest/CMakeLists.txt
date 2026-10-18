@@ -32,50 +32,50 @@ if(NOT TARGET GTest::gtest_main)
   endif()
 endif()
 
-add_executable(ECOSTL_ECOSTLTest ${_cppbuild_sources})
-set_target_properties(ECOSTL_ECOSTLTest PROPERTIES OUTPUT_NAME "ECOSTLTest")
+add_executable(ECOSTLTest ${_cppbuild_sources})
+set_target_properties(ECOSTLTest PROPERTIES OUTPUT_NAME "ECOSTLTest")
 # Visual Studio debugs in the Project directory, where CppBuild's run and the tests start too.
-set_target_properties(ECOSTL_ECOSTLTest PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${_cppbuild_project_dir}")
-target_include_directories(ECOSTL_ECOSTLTest PRIVATE "${_cppbuild_project_dir}/include")
-target_compile_options(ECOSTL_ECOSTLTest PRIVATE "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/utf-8;/Zc:__cplusplus>" "$<$<COMPILE_LANG_AND_ID:C,MSVC>:/utf-8>")
-target_link_libraries(ECOSTL_ECOSTLTest PRIVATE GTest::gtest_main GTest::gmock ECOSTL::ECOSTL_static)
+set_target_properties(ECOSTLTest PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${_cppbuild_project_dir}")
+target_include_directories(ECOSTLTest PRIVATE "${_cppbuild_project_dir}/include")
+target_compile_options(ECOSTLTest PRIVATE "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/utf-8;/Zc:__cplusplus>" "$<$<COMPILE_LANG_AND_ID:C,MSVC>:/utf-8>")
+target_link_libraries(ECOSTLTest PRIVATE GTest::gtest_main GTest::gmock ECOSTL::ECOSTL_static)
 if(MSVC)
-  target_compile_options(ECOSTL_ECOSTLTest PRIVATE "$<$<COMPILE_LANGUAGE:C,CXX>:/W3>")
+  target_compile_options(ECOSTLTest PRIVATE "$<$<COMPILE_LANGUAGE:C,CXX>:/W3>")
 endif()
-set_target_properties(ECOSTL_ECOSTLTest PROPERTIES CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+set_target_properties(ECOSTLTest PROPERTIES CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
 if(DEFINED ECOSTL_ECOSTLTest_CXX_STANDARD)
-  set_target_properties(ECOSTL_ECOSTLTest PROPERTIES CXX_STANDARD ${ECOSTL_ECOSTLTest_CXX_STANDARD})
+  set_target_properties(ECOSTLTest PROPERTIES CXX_STANDARD ${ECOSTL_ECOSTLTest_CXX_STANDARD})
 endif()
 if(ECOSTL_ECOSTLTest_OUTPUT_DIRECTORY)
-  set_target_properties(ECOSTL_ECOSTLTest PROPERTIES
+  set_target_properties(ECOSTLTest PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${ECOSTL_ECOSTLTest_OUTPUT_DIRECTORY}"
     LIBRARY_OUTPUT_DIRECTORY "${ECOSTL_ECOSTLTest_OUTPUT_DIRECTORY}"
     ARCHIVE_OUTPUT_DIRECTORY "${ECOSTL_ECOSTLTest_OUTPUT_DIRECTORY}"
     PDB_OUTPUT_DIRECTORY "${ECOSTL_ECOSTLTest_OUTPUT_DIRECTORY}"
   )
 endif()
-set_property(GLOBAL APPEND PROPERTY CPPBUILD_COMPILED_TARGETS ECOSTL_ECOSTLTest)
+set_property(GLOBAL APPEND PROPERTY CPPBUILD_COMPILED_TARGETS ECOSTLTest)
 if(_cppbuild_modules)
   if(CMAKE_VERSION VERSION_LESS 3.28)
-    message(FATAL_ERROR "ECOSTL_ECOSTLTest has C++ module interface units, which need CMake 3.28 or later")
+    message(FATAL_ERROR "ECOSTLTest has C++ module interface units, which need CMake 3.28 or later")
   endif()
-  target_sources(ECOSTL_ECOSTLTest PRIVATE FILE_SET cppbuild_modules TYPE CXX_MODULES
+  target_sources(ECOSTLTest PRIVATE FILE_SET cppbuild_modules TYPE CXX_MODULES
     BASE_DIRS "${_cppbuild_project_dir}" FILES ${_cppbuild_modules})
-  set_property(GLOBAL APPEND PROPERTY CPPBUILD_MODULE_TARGETS ECOSTL_ECOSTLTest)
+  set_property(GLOBAL APPEND PROPERTY CPPBUILD_MODULE_TARGETS ECOSTLTest)
 endif()
 if(WIN32)
   # DLLs the program loads (imported libraries, libraries with their own output directory)
   # beside it, so it starts from Visual Studio, CppBuild's run or the tests alike.
-  add_custom_command(TARGET ECOSTL_ECOSTLTest POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E "$<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:ECOSTL_ECOSTLTest>>,copy_if_different,true>"
-      "$<TARGET_RUNTIME_DLLS:ECOSTL_ECOSTLTest>" "$<TARGET_FILE_DIR:ECOSTL_ECOSTLTest>" COMMAND_EXPAND_LISTS VERBATIM)
+  add_custom_command(TARGET ECOSTLTest POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E "$<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:ECOSTLTest>>,copy_if_different,true>"
+      "$<TARGET_RUNTIME_DLLS:ECOSTLTest>" "$<TARGET_FILE_DIR:ECOSTLTest>" COMMAND_EXPAND_LISTS VERBATIM)
 endif()
 if(DISPLAY IN_LIST CPPBUILD_REQUESTED AND NOT CPPBUILD_WHOLE_SOLUTION)
   # Listed for the IDE only: shown, but not part of the default build.
-  set_target_properties(ECOSTL_ECOSTLTest PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+  set_target_properties(ECOSTLTest PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
   if(CMAKE_RUNTIME_OUTPUT_DIRECTORY AND CPPBUILD_LINKED_OUTPUT AND NOT ECOSTL_ECOSTLTest_OUTPUT_DIRECTORY)
     # Programs of different Solutions may share a file name.
-    set_target_properties(ECOSTL_ECOSTLTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CPPBUILD_LINKED_OUTPUT}")
+    set_target_properties(ECOSTLTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CPPBUILD_LINKED_OUTPUT}")
   endif()
 endif()
 
@@ -85,9 +85,9 @@ if(CPPBUILD_WHOLE_SOLUTION)
   if(CMAKE_VERSION VERSION_GREATER_EQUAL 4.2)
     set(_cppbuild_discovery_args DISCOVERY_EXTRA_ARGS "--gtest_output=")
   endif()
-  gtest_discover_tests(ECOSTL_ECOSTLTest DISCOVERY_MODE PRE_TEST WORKING_DIRECTORY "${_cppbuild_project_dir}"
+  gtest_discover_tests(ECOSTLTest DISCOVERY_MODE PRE_TEST WORKING_DIRECTORY "${_cppbuild_project_dir}"
     # Without a prefix, a test name shared by two TEST Projects takes both labels.
-    TEST_PREFIX "ECOSTLTest." PROPERTIES LABELS ECOSTL_ECOSTLTest ${_cppbuild_discovery_args})
+    TEST_PREFIX "ECOSTLTest." PROPERTIES LABELS ECOSTLTest ${_cppbuild_discovery_args})
 endif()
 
 if(_cppbuild_sources OR _cppbuild_modules)
