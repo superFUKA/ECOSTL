@@ -1,9 +1,9 @@
 #pragma once
 #include <cassert>
-#include <cstddef>
-#include <type_traits>
-#include <utility>
-#include "../Allocator/MemoryAllocatorAPI.h"
+#include "../../Core/Utility.h"
+#include "../../Type/Type.h"
+#include "../../Type/TypeTraits.h"
+#include "../Allocate/MemoryAllocatorAPI.h"
 
 namespace utl
 {
@@ -35,8 +35,8 @@ namespace utl
 		UniquePtr(Type* ptr, MemoryAllocatorDelegate* allocator)
 			: alloc_(allocator)
 			, ptr_(ptr)
-			, block_(const_cast<std::remove_cv_t<Type>*>(ptr))
-			, delete_(&DeleteAs<std::remove_cv_t<Type>>)
+			, block_(const_cast<RemoveCVType<Type>*>(ptr))
+			, delete_(&DeleteAs<RemoveCVType<Type>>)
 		{
 
 		}
@@ -54,7 +54,7 @@ namespace utl
 		{
 		}
 
-		UniquePtr(std::nullptr_t)noexcept
+		UniquePtr(NullptrT)noexcept
 			: UniquePtr()
 		{
 
@@ -97,7 +97,7 @@ namespace utl
 		UniquePtr& operator=(UniquePtr&& src)noexcept
 		{
 			// 自分自身をムーブしても、いったん一時オブジェクトに移して戻すだけになる
-			UniquePtr(std::move(src)).Swap(*this);
+			UniquePtr(Move(src)).Swap(*this);
 			return *this;
 		}
 
@@ -106,7 +106,7 @@ namespace utl
 		/// </summary>
 		/// <typeparam name="SubType"></typeparam>
 		/// <param name="src"></param>
-		template<typename SubType, std::enable_if_t<std::is_convertible_v<SubType*, Type*>, int> = 0>
+		template<typename SubType, EnableIfType<IsConvertibleV<SubType*, Type*>, int> = 0>
 		UniquePtr(UniquePtr<SubType>&& src)noexcept
 			: alloc_(src.alloc_)
 			, ptr_(src.ptr_)
@@ -121,14 +121,14 @@ namespace utl
 		/// <typeparam name="SubType"></typeparam>
 		/// <param name="src"></param>
 		/// <returns></returns>
-		template<typename SubType, std::enable_if_t<std::is_convertible_v<SubType*, Type*>, int> = 0>
+		template<typename SubType, EnableIfType<IsConvertibleV<SubType*, Type*>, int> = 0>
 		UniquePtr& operator=(UniquePtr<SubType>&& src)noexcept
 		{
-			UniquePtr(std::move(src)).Swap(*this);
+			UniquePtr(Move(src)).Swap(*this);
 			return *this;
 		}
 
-		UniquePtr& operator=(std::nullptr_t)noexcept
+		UniquePtr& operator=(NullptrT)noexcept
 		{
 			Reset();
 			return *this;
@@ -140,10 +140,10 @@ namespace utl
 		/// <param name="other"></param>
 		void Swap(UniquePtr& other)noexcept
 		{
-			std::swap(alloc_, other.alloc_);
-			std::swap(ptr_, other.ptr_);
-			std::swap(block_, other.block_);
-			std::swap(delete_, other.delete_);
+			utl::Swap(alloc_, other.alloc_);
+			utl::Swap(ptr_, other.ptr_);
+			utl::Swap(block_, other.block_);
+			utl::Swap(delete_, other.delete_);
 		}
 
 
@@ -288,7 +288,7 @@ namespace utl
 		MemoryAllocatorRef allocHolder(allocator);
 
 		// メモリを確保してインスタンスを配置する
-		Type* ins = allocHolder.New<Type>(std::forward<ArgTypes>(args)...);
+		Type* ins = allocHolder.New<Type>(Forward<ArgTypes>(args)...);
 		if (ins == nullptr)
 		{
 			return UniquePtr<Type>();
@@ -308,6 +308,6 @@ namespace utl
 	template<typename Type, typename...ArgTypes>
 	inline UniquePtr<Type> MakeUnique(ArgTypes&&...args)
 	{
-		return MakeUniqueWithAlloc<Type>(nullptr, std::forward<ArgTypes>(args)...);
+		return MakeUniqueWithAlloc<Type>(nullptr, Forward<ArgTypes>(args)...);
 	}
 }

@@ -1,9 +1,9 @@
 #pragma once
 #include <cassert>
-#include <cstddef>
-#include <type_traits>
-#include <utility>
-#include "../Allocator/MemoryAllocatorAPI.h"
+#include "../../Core/Utility.h"
+#include "../../Type/Type.h"
+#include "../../Type/TypeTraits.h"
+#include "../Allocate/MemoryAllocatorAPI.h"
 
 namespace utl
 {
@@ -42,7 +42,7 @@ namespace utl
 	public:
 		template<typename...ArgTypes>
 		RefCounterToIns(MemoryAllocatorDelegate* alloc, ArgTypes&&...args)
-			: ins(std::forward<ArgTypes>(args)...)
+			: ins(Forward<ArgTypes>(args)...)
 			, typeCounter(this, &DeleteAs<RefCounterToIns>, alloc)
 		{
 		}
@@ -98,7 +98,7 @@ namespace utl
 
 		}
 
-		SharedPtr(std::nullptr_t)noexcept
+		SharedPtr(NullptrT)noexcept
 			: SharedPtr()
 		{
 
@@ -128,7 +128,7 @@ namespace utl
 		/// </summary>
 		/// <typeparam name="SubType"></typeparam>
 		/// <param name="src"></param>
-		template<typename SubType, std::enable_if_t<std::is_convertible_v<SubType*, Type*>, int> = 0>
+		template<typename SubType, EnableIfType<IsConvertibleV<SubType*, Type*>, int> = 0>
 		SharedPtr(const SharedPtr<SubType>& src)noexcept
 			: ptr_(src.ptr_)
 			, ref_(src.ref_)
@@ -153,7 +153,7 @@ namespace utl
 		/// </summary>
 		/// <typeparam name="SubType"></typeparam>
 		/// <param name="src"></param>
-		template<typename SubType, std::enable_if_t<std::is_convertible_v<SubType*, Type*>, int> = 0>
+		template<typename SubType, EnableIfType<IsConvertibleV<SubType*, Type*>, int> = 0>
 		SharedPtr(SharedPtr<SubType>&& src)noexcept
 			: ptr_(src.ptr_)
 			, ref_(src.ref_)
@@ -175,7 +175,7 @@ namespace utl
 			SharedPtr(src).Swap(*this);
 			return *this;
 		}
-		template<typename SubType, std::enable_if_t<std::is_convertible_v<SubType*, Type*>, int> = 0>
+		template<typename SubType, EnableIfType<IsConvertibleV<SubType*, Type*>, int> = 0>
 		SharedPtr& operator=(const SharedPtr<SubType>& src)noexcept
 		{
 			SharedPtr(src).Swap(*this);
@@ -184,17 +184,17 @@ namespace utl
 
 		SharedPtr& operator=(SharedPtr&& src)noexcept
 		{
-			SharedPtr(std::move(src)).Swap(*this);
+			SharedPtr(Move(src)).Swap(*this);
 			return *this;
 		}
-		template<typename SubType, std::enable_if_t<std::is_convertible_v<SubType*, Type*>, int> = 0>
+		template<typename SubType, EnableIfType<IsConvertibleV<SubType*, Type*>, int> = 0>
 		SharedPtr& operator=(SharedPtr<SubType>&& src)noexcept
 		{
-			SharedPtr(std::move(src)).Swap(*this);
+			SharedPtr(Move(src)).Swap(*this);
 			return *this;
 		}
 
-		SharedPtr& operator=(std::nullptr_t)noexcept
+		SharedPtr& operator=(NullptrT)noexcept
 		{
 			Reset();
 			return *this;
@@ -206,8 +206,8 @@ namespace utl
 		/// <param name="other"></param>
 		void Swap(SharedPtr& other)noexcept
 		{
-			std::swap(ptr_, other.ptr_);
-			std::swap(ref_, other.ref_);
+			utl::Swap(ptr_, other.ptr_);
+			utl::Swap(ref_, other.ref_);
 		}
 
 		//---------------------------------
@@ -377,7 +377,7 @@ namespace utl
 	{
 		MemoryAllocatorRef allocHolder(alloc);
 
-		RefCounterToIns<Type>* holder = allocHolder.New<RefCounterToIns<Type>>(alloc, std::forward<ArgTypes>(args)...);
+		RefCounterToIns<Type>* holder = allocHolder.New<RefCounterToIns<Type>>(alloc, Forward<ArgTypes>(args)...);
 		if (holder == nullptr)
 		{
 			return SharedPtr<Type>();
@@ -396,6 +396,6 @@ namespace utl
 	template<typename Type, typename...ArgTypes>
 	inline SharedPtr<Type> MakeShared(ArgTypes&&...args)
 	{
-		return MakeSharedWithAlloc<Type>(nullptr, std::forward<ArgTypes>(args)...);
+		return MakeSharedWithAlloc<Type>(nullptr, Forward<ArgTypes>(args)...);
 	}
 }
