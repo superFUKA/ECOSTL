@@ -1,8 +1,11 @@
+// ヘッダー単体でコンパイルできることを確かめるため、最初に読み込む
+#include "ECOSTL/src/Memory/SmartPointer/UniquePtr.h"
+
 #include <gtest/gtest.h>
 
+#include <set>
 #include <utility>
 
-#include "ECOSTL/src/Memory/SmartPointer/UniquePtr.h"
 
 namespace
 {
@@ -61,23 +64,35 @@ namespace
 	class CountingAllocator
 	{
 	public:
-		void* Allocate(uint32_t size, uint32_t)
+		void* Allocate(uint32_t size, uint32_t align)
 		{
 			++allocCount;
 			lastSize = size;
-			return malloc(size);
+			lastAlign = align;
+			void* mem = malloc(size);
+			live.insert(mem);
+			return mem;
 		}
 		bool Free(void* memory)
 		{
 			++freeCount;
 			lastFreed = memory;
+			// 確保していないアドレスは開放しない（不正な開放として数える）
+			if (live.erase(memory) == 0)
+			{
+				++badFreeCount;
+				return false;
+			}
 			free(memory);
 			return true;
 		}
 
 		int allocCount = 0;
 		int freeCount = 0;
+		int badFreeCount = 0;
 		uint32_t lastSize = 0;
+		uint32_t lastAlign = 0;
+		std::set<void*> live;
 		void* lastFreed = nullptr;
 	};
 
@@ -342,4 +357,215 @@ TEST_F(UniquePtrTest, CompareWithUniquePtr) {
 	EXPECT_FALSE(a == b);
 	EXPECT_TRUE(emptyA == emptyB);
 	EXPECT_TRUE(a != emptyA);
+}
+
+//----------------------------------------
+// 不具合の再現
+//----------------------------------------
+
+namespace
+{
+	/// <summary>
+	/// 2番目の基底クラス（派生クラスの先頭とアドレスがずれる）
+	/// </summary>
+	struct SecondBase
+	{
+		virtual ~SecondBase() = default;
+
+		int second = 0;
+	};
+
+	struct MultiDerived : Tracked, SecondBase
+	{
+		static inline int multiDestroyed = 0;
+
+		MultiDerived(int v)
+			: Tracked(v)
+		{
+			second = v * 10;
+		}
+		~MultiDerived() override
+		{
+			++multiDestroyed;
+		}
+	};
+
+	/// <summary>
+	/// 仮想デストラクタを持たない基底クラス
+	/// </summary>
+	struct PlainBase
+	{
+		static inline int baseDestroyed = 0;
+
+		~PlainBase()
+		{
+			++baseDestroyed;
+		}
+	};
+
+	struct PlainDerived : PlainBase
+	{
+		static inline int derivedDestroyed = 0;
+
+		~PlainDerived()
+		{
+			++derivedDestroyed;
+		}
+	};
+
+	struct alignas(64) OverAligned
+	{
+		char data[64];
+	};
+
+	/// <summary>
+	/// コンストラクタで例外を投げる型
+	/// </summary>
+	struct ThrowOnConstruct
+	{
+		ThrowOnConstruct()
+		{
+			throw 1;
+		}
+	};
+
+	/// <summary>
+	/// ムーブしかできない引数を受け取る型
+	/// </summary>
+	struct HoldsUnique
+	{
+		HoldsUnique(utl::UniquePtr<int>&& src)
+			: held(std::move(src))
+		{}
+
+		utl::UniquePtr<int> held;
+	};
+
+	/// <summary>
+	/// 常に確保に失敗するアロケータ
+	/// </summary>
+	class FailingAllocator
+	{
+	public:
+		void* Allocate(uint32_t, uint32_t)
+		{
+			return nullptr;
+		}
+		bool Free(void*)
+		{
+			return true;
+		}
+	};
+}
+
+// boolへ暗黙に変換できない（int x = ptr + 1; 等を防ぐ）
+static_assert(!std::is_convertible_v<utl::UniquePtr<int>, bool>);
+static_assert(std::is_constructible_v<bool, utl::UniquePtr<int>>);
+// 変換できない型からはムーブできない
+static_assert(!std::is_constructible_v<utl::UniquePtr<int>, utl::UniquePtr<double>&&>);
+static_assert(std::is_nothrow_move_constructible_v<utl::UniquePtr<int>>);
+static_assert(std::is_nothrow_move_assignable_v<utl::UniquePtr<int>>);
+
+TEST_F(UniquePtrTest, MoveToSecondBaseFreesAllocatedAddress) {
+	MultiDerived::multiDestroyed = 0;
+	{
+		utl::UniquePtr<SecondBase> dst = utl::MakeUniqueWithAlloc<MultiDerived>(&delegate, 3);
+
+		ASSERT_TRUE(dst);
+		EXPECT_EQ(dst->second, 30);
+	}
+
+	EXPECT_EQ(MultiDerived::multiDestroyed, 1);
+	EXPECT_EQ(Tracked::alive, 0);
+	EXPECT_EQ(alloc.freeCount, 1);
+	// 確保したアドレスをそのまま開放している
+	EXPECT_EQ(alloc.badFreeCount, 0);
+}
+
+TEST_F(UniquePtrTest, MoveToNonVirtualBaseCallsDerivedDestructor) {
+	PlainBase::baseDestroyed = 0;
+	PlainDerived::derivedDestroyed = 0;
+	{
+		utl::UniquePtr<PlainBase> dst = utl::MakeUniqueWithAlloc<PlainDerived>(&delegate);
+	}
+
+	// 作成したときの型で破棄される
+	EXPECT_EQ(PlainDerived::derivedDestroyed, 1);
+	EXPECT_EQ(PlainBase::baseDestroyed, 1);
+}
+
+TEST_F(UniquePtrTest, SelfMoveAssignKeepsInstance) {
+	utl::UniquePtr<Tracked> ptr = utl::MakeUniqueWithAlloc<Tracked>(&delegate, 1);
+	utl::UniquePtr<Tracked>& ref = ptr;
+
+	ptr = std::move(ref);
+
+	ASSERT_TRUE(ptr);
+	EXPECT_EQ(ptr->value, 1);
+	EXPECT_EQ(Tracked::alive, 1);
+	EXPECT_EQ(alloc.freeCount, 0);
+}
+
+TEST_F(UniquePtrTest, MakeUniquePassesAlignment) {
+	utl::UniquePtr<OverAligned> ptr = utl::MakeUniqueWithAlloc<OverAligned>(&delegate);
+
+	EXPECT_EQ(alloc.lastAlign, alignof(OverAligned));
+}
+
+TEST_F(UniquePtrTest, MakeUniqueAlignsWithStandardAllocation) {
+	utl::UniquePtr<OverAligned> ptr = utl::MakeUnique<OverAligned>();
+
+	ASSERT_TRUE(ptr);
+	EXPECT_EQ(reinterpret_cast<uintptr_t>(ptr.Get()) % alignof(OverAligned), 0u);
+}
+
+TEST_F(UniquePtrTest, ThrowingConstructorFreesMemory) {
+	EXPECT_THROW(utl::MakeUniqueWithAlloc<ThrowOnConstruct>(&delegate), int);
+
+	EXPECT_EQ(alloc.allocCount, 1);
+	EXPECT_EQ(alloc.freeCount, 1);
+}
+
+TEST_F(UniquePtrTest, AllocationFailureReturnsEmpty) {
+	FailingAllocator failing;
+	utl::MemoryAllocatorDelegate failingDelegate;
+	failingDelegate.Register<FailingAllocator, &FailingAllocator::Allocate, &FailingAllocator::Free>(&failing);
+
+	utl::UniquePtr<Tracked> ptr = utl::MakeUniqueWithAlloc<Tracked>(&failingDelegate, 1);
+
+	EXPECT_FALSE(ptr);
+	EXPECT_EQ(Tracked::alive, 0);
+}
+
+TEST_F(UniquePtrTest, UnregisteredDelegateReturnsEmpty) {
+	utl::MemoryAllocatorDelegate unregistered;
+
+	utl::UniquePtr<Tracked> ptr = utl::MakeUniqueWithAlloc<Tracked>(&unregistered, 1);
+
+	EXPECT_FALSE(ptr);
+	EXPECT_EQ(Tracked::alive, 0);
+}
+
+TEST_F(UniquePtrTest, MakeUniqueForwardsMoveOnlyArgument) {
+	utl::UniquePtr<HoldsUnique> ptr = utl::MakeUnique<HoldsUnique>(utl::MakeUnique<int>(3));
+
+	ASSERT_TRUE(ptr);
+	ASSERT_TRUE(ptr->held);
+	EXPECT_EQ(*ptr->held, 3);
+}
+
+TEST_F(UniquePtrTest, SwapExchangesInstances) {
+	utl::UniquePtr<Tracked> a = utl::MakeUniqueWithAlloc<Tracked>(&delegate, 1);
+	utl::UniquePtr<Tracked> b = utl::MakeUnique<Tracked>(2);
+
+	a.Swap(b);
+
+	EXPECT_EQ(a->value, 2);
+	EXPECT_EQ(a.MemAllocator().Get(), nullptr);
+	EXPECT_EQ(b->value, 1);
+	EXPECT_EQ(b.MemAllocator().Get(), &delegate);
+
+	b.Reset();
+	EXPECT_EQ(alloc.freeCount, 1);
+	EXPECT_EQ(alloc.badFreeCount, 0);
 }
