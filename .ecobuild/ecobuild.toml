@@ -1,5 +1,5 @@
 # ECOBuildのモジュール設定。
-format = 2
+format = 3
 
 [module]
 name = "ECOSTL"
