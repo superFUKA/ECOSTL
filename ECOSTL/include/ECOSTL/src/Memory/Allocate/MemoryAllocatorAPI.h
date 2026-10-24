@@ -114,7 +114,12 @@ namespace utl
 	public:
 		explicit MemoryAllocatorRef(MemoryAllocatorDelegate* alloc = nullptr)
 			:alloc_(alloc)
-		{}
+		{
+		}
+		explicit MemoryAllocatorRef(MemoryAllocatorRef* alloc)
+			:alloc_(alloc->Get())
+		{
+		}
 
 		MemoryAllocatorDelegate* Get()const
 		{

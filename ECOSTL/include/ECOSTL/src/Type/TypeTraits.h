@@ -38,9 +38,11 @@ namespace utl
 	/// 2つの型が同じか
 	/// </summary>
 	template<typename T, typename U>
-	struct IsSame : FalseType {};
+	struct IsSame : FalseType
+	{};
 	template<typename T>
-	struct IsSame<T, T> : TrueType {};
+	struct IsSame<T, T> : TrueType
+	{};
 
 	template<typename T, typename U>
 	inline constexpr bool IsSameV = IsSame<T, U>::Value;
@@ -49,9 +51,11 @@ namespace utl
 	/// 左辺値参照か
 	/// </summary>
 	template<typename T>
-	struct IsLvalueReference : FalseType {};
+	struct IsLvalueReference : FalseType
+	{};
 	template<typename T>
-	struct IsLvalueReference<T&> : TrueType {};
+	struct IsLvalueReference<T&> : TrueType
+	{};
 
 	template<typename T>
 	inline constexpr bool IsLvalueReferenceV = IsLvalueReference<T>::Value;
@@ -64,33 +68,82 @@ namespace utl
 	/// 参照を外す
 	/// </summary>
 	template<typename T>
-	struct RemoveReference { using Type = T; };
+	struct RemoveReference
+	{
+		using Type = T;
+	};
 	template<typename T>
-	struct RemoveReference<T&> { using Type = T; };
+	struct RemoveReference<T&>
+	{
+		using Type = T;
+	};
 	template<typename T>
-	struct RemoveReference<T&&> { using Type = T; };
-
+	struct RemoveReference<T&&>
+	{
+		using Type = T;
+	};
 	template<typename T>
 	using RemoveReferenceType = typename RemoveReference<T>::Type;
+
+	/// <summary>
+	/// constを付ける
+	/// </summary>
+	template<typename T>
+	struct AddConst
+	{
+		using Type = const T;
+	};
+	template<typename T>
+	struct AddConst<const T>
+	{
+		using Type = const T;
+	};
+	template<typename T>
+	using AddConstType = typename AddConst<T>::Type;
 
 	/// <summary>
 	/// constを外す
 	/// </summary>
 	template<typename T>
-	struct RemoveConst { using Type = T; };
+	struct RemoveConst
+	{
+		using Type = T;
+	};
 	template<typename T>
-	struct RemoveConst<const T> { using Type = T; };
+	struct RemoveConst<const T>
+	{
+		using Type = T;
+	};
 
 	template<typename T>
 	using RemoveConstType = typename RemoveConst<T>::Type;
 
 	/// <summary>
+	/// constがついているか判定
+	/// </summary>
+	template<typename T>
+	struct IsConst : FalseType
+	{};
+	template<typename T>
+	struct IsConst<const T> : TrueType
+	{};
+
+	template<typename T>
+	inline constexpr bool IsConstV = IsConst<T>::Value;
+
+	/// <summary>
 	/// volatileを外す
 	/// </summary>
 	template<typename T>
-	struct RemoveVolatile { using Type = T; };
+	struct RemoveVolatile
+	{
+		using Type = T;
+	};
 	template<typename T>
-	struct RemoveVolatile<volatile T> { using Type = T; };
+	struct RemoveVolatile<volatile T>
+	{
+		using Type = T;
+	};
 
 	template<typename T>
 	using RemoveVolatileType = typename RemoveVolatile<T>::Type;
@@ -99,7 +152,10 @@ namespace utl
 	/// constとvolatileを外す
 	/// </summary>
 	template<typename T>
-	struct RemoveCV { using Type = RemoveConstType<RemoveVolatileType<T>>; };
+	struct RemoveCV
+	{
+		using Type = RemoveConstType<RemoveVolatileType<T>>;
+	};
 
 	template<typename T>
 	using RemoveCVType = typename RemoveCV<T>::Type;
@@ -116,7 +172,8 @@ namespace utl
 	}
 
 	template<typename T>
-	struct AddRvalueReference : decltype(detail::TryAddRvalueReference<T>(0)) {};
+	struct AddRvalueReference : decltype(detail::TryAddRvalueReference<T>(0))
+	{};
 
 	template<typename T>
 	using AddRvalueReferenceType = typename AddRvalueReference<T>::Type;
@@ -135,9 +192,13 @@ namespace utl
 	/// 条件が真のときだけ型を持つ
 	/// </summary>
 	template<bool Condition, typename T = void>
-	struct EnableIf {};
+	struct EnableIf
+	{};
 	template<typename T>
-	struct EnableIf<true, T> { using Type = T; };
+	struct EnableIf<true, T>
+	{
+		using Type = T;
+	};
 
 	template<bool Condition, typename T = void>
 	using EnableIfType = typename EnableIf<Condition, T>::Type;
@@ -146,9 +207,15 @@ namespace utl
 	/// 条件で型を選ぶ
 	/// </summary>
 	template<bool Condition, typename TrueT, typename FalseT>
-	struct Conditional { using Type = TrueT; };
+	struct Conditional
+	{
+		using Type = TrueT;
+	};
 	template<typename TrueT, typename FalseT>
-	struct Conditional<false, TrueT, FalseT> { using Type = FalseT; };
+	struct Conditional<false, TrueT, FalseT> 
+	{ 
+		using Type = FalseT; 
+	};
 
 	template<bool Condition, typename TrueT, typename FalseT>
 	using ConditionalType = typename Conditional<Condition, TrueT, FalseT>::Type;
@@ -163,11 +230,13 @@ namespace utl
 		void TestImplicitConvert(To) noexcept;
 
 		template<typename From, typename To, typename = void>
-		struct IsConvertibleImpl : FalseType {};
+		struct IsConvertibleImpl : FalseType
+		{};
 
 		// To型の引数にFrom型の値を暗黙に渡せれば変換できる
 		template<typename From, typename To>
-		struct IsConvertibleImpl<From, To, decltype(TestImplicitConvert<To>(DeclVal<From>()))> : TrueType {};
+		struct IsConvertibleImpl<From, To, decltype(TestImplicitConvert<To>(DeclVal<From>()))> : TrueType
+		{};
 	}
 
 	/// <summary>
