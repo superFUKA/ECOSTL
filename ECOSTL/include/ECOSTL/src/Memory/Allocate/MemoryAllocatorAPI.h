@@ -116,10 +116,6 @@ namespace utl
 			:alloc_(alloc)
 		{
 		}
-		explicit MemoryAllocatorRef(MemoryAllocatorRef* alloc)
-			:alloc_(alloc->Get())
-		{
-		}
 
 		MemoryAllocatorDelegate* Get()const
 		{
