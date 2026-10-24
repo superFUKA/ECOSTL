@@ -80,9 +80,10 @@ namespace utl
 		template<typename...ArgTypes>
 		Type* Insert(const SparseKey key, ArgTypes&&...args)
 		{
-			if (table_.CheckActive(key))
+			const DenceIndex index = table_.TryGetIndex(key);
+			if (index != NULL_VALUE)
 			{
-				Type& value = values_[table_.GetIndex(key)];
+				Type& value = values_[index];
 				value = Type(Forward<ArgTypes>(args)...);
 				return &value;
 			}
@@ -93,7 +94,7 @@ namespace utl
 			{
 				return nullptr;
 			}
-			table_.Insert(key);
+			table_.AppendNew(key);
 			return value;
 		}
 
@@ -169,19 +170,13 @@ namespace utl
 		/// <returns>無効なキーならnullptr</returns>
 		Type* Get(const SparseKey key)
 		{
-			if (!table_.CheckActive(key))
-			{
-				return nullptr;
-			}
-			return &values_[table_.GetIndex(key)];
+			const DenceIndex index = table_.TryGetIndex(key);
+			return index == NULL_VALUE ? nullptr : &values_[index];
 		}
 		const Type* Get(const SparseKey key)const
 		{
-			if (!table_.CheckActive(key))
-			{
-				return nullptr;
-			}
-			return &values_[table_.GetIndex(key)];
+			const DenceIndex index = table_.TryGetIndex(key);
+			return index == NULL_VALUE ? nullptr : &values_[index];
 		}
 
 		/// <summary>
@@ -189,14 +184,15 @@ namespace utl
 		/// </summary>
 		Type& GetOrAdd(const SparseKey key)
 		{
-			if (table_.CheckActive(key))
+			const DenceIndex index = table_.TryGetIndex(key);
+			if (index != NULL_VALUE)
 			{
-				return values_[table_.GetIndex(key)];
+				return values_[index];
 			}
 
 			Type* value = values_.EmplaceBack();
 			assert(value != nullptr && "メモリを確保できませんでした");
-			table_.Insert(key);
+			table_.AppendNew(key);
 			return *value;
 		}
 

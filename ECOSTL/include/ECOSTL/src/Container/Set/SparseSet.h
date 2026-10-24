@@ -81,15 +81,26 @@ namespace utl
 		DenceIndex Insert(const SparseKey key)
 		{
 			// すでに追加済みのキーならそのまま返す
-			if (CheckActive(key))
+			const DenceIndex index = TryGetIndex(key);
+			if (index != NULL_VALUE)
 			{
-				return keyToIndex_[key];
+				return index;
 			}
+			// 未追加なら新しいキーを割り当てる
+			return AppendNew(key);
+		}
+
+		/// <summary>
+		/// 未追加と分かっているキーを追加する
+		/// 追加済みのキーを渡してはいけない
+		/// </summary>
+		DenceIndex AppendNew(const SparseKey key)
+		{
+			assert(!CheckActive(key));
 
 			// 添え字を求めた後に要素数を増加
-			DenceIndex index = size_++;
+			const DenceIndex index = size_++;
 
-			// まだ追加してなければ追加
 			if (!keyToIndex_.IsValidIndex(key))
 			{
 				keyToIndex_.Resize(key + 1, NULL_VALUE);
@@ -114,19 +125,19 @@ namespace utl
 
 		bool CheckActive(const SparseKey key)const
 		{
-			if (key == NULL_VALUE)
-			{
-				return false;
-			}
+			return keyToIndex_.IsValidIndex(key) && keyToIndex_[key] != NULL_VALUE;
+		}
+
+		/// <summary>
+		/// 有効なキーの添え字を返す。無効ならNULL_VALUE
+		/// </summary>
+		DenceIndex TryGetIndex(const SparseKey key)const
+		{
 			if (!keyToIndex_.IsValidIndex(key))
 			{
-				return false;
+				return NULL_VALUE;
 			}
-			if (!indexToKey_.IsValidIndex(keyToIndex_[key]))
-			{
-				return false;
-			}
-			return keyToIndex_[key] != NULL_VALUE;
+			return keyToIndex_[key];
 		}
 
 		DenceIndex GetIndex(const SparseKey key)const
