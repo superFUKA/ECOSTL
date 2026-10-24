@@ -4,7 +4,7 @@
 namespace utl
 {
 	template<typename>
-	class FunctionObject; // プライマリは未定義
+	class Function; // プライマリは未定義
 
 	/// <summary>
 	/// 関数ポインタ相当の軽量な呼び出し可能オブジェクト
@@ -13,7 +13,7 @@ namespace utl
 	/// <typeparam name="R">戻り値の型</typeparam>
 	/// <typeparam name="Args">引数の型</typeparam>
 	template<typename R, typename... Args>
-	class FunctionObject<R(Args...)>
+	class Function<R(Args...)>
 	{
 	public:
 		// 作成
@@ -22,9 +22,9 @@ namespace utl
 		/// <summary>
 		/// 空の状態で作成する。呼び出してはならない
 		/// </summary>
-		FunctionObject() noexcept = default;
+		Function() noexcept = default;
 
-		FunctionObject(decltype(nullptr)) noexcept
+		Function(decltype(nullptr)) noexcept
 		{
 		}
 
@@ -33,13 +33,13 @@ namespace utl
 		/// </summary>
 		/// <param name="f">呼び出す関数</param>
 		template<typename F, EnableIfType<IsConvertibleV<F, R(*)(Args...)>, int> = 0>
-		FunctionObject(F f) noexcept
+		Function(F f) noexcept
 			: func_(f)
 		{
 		}
 
-		FunctionObject(const FunctionObject&) noexcept = default;
-		FunctionObject& operator=(const FunctionObject&) noexcept = default;
+		Function(const Function&) noexcept = default;
+		Function& operator=(const Function&) noexcept = default;
 
 		/// <summary>
 		/// メンバ関数とインスタンスを束ねて作成する
@@ -48,9 +48,9 @@ namespace utl
 		/// <typeparam name="Method">呼び出すメンバ関数</typeparam>
 		/// <param name="instance">呼び出す対象。寿命は呼び出し側が管理する</param>
 		template<typename C, R(C::* Method)(Args...)>
-		static FunctionObject Bind(C* instance) noexcept
+		static Function Bind(C* instance) noexcept
 		{
-			return FunctionObject(instance, [](void* o, Args... as) -> R
+			return Function(instance, [](void* o, Args... as) -> R
 				{
 					return (static_cast<C*>(o)->*Method)(Forward<Args>(as)...);
 				});
@@ -60,9 +60,9 @@ namespace utl
 		/// constメンバ関数とインスタンスを束ねて作成する
 		/// </summary>
 		template<typename C, R(C::* Method)(Args...) const>
-		static FunctionObject Bind(const C* instance) noexcept
+		static Function Bind(const C* instance) noexcept
 		{
-			return FunctionObject(const_cast<C*>(instance), [](void* o, Args... as) -> R
+			return Function(const_cast<C*>(instance), [](void* o, Args... as) -> R
 				{
 					return (static_cast<const C*>(o)->*Method)(Forward<Args>(as)...);
 				});
@@ -94,7 +94,7 @@ namespace utl
 	private:
 		using Stub = R(*)(void*, Args...);
 
-		FunctionObject(void* obj, Stub stub) noexcept
+		Function(void* obj, Stub stub) noexcept
 			: obj_(obj)
 			, stub_(stub)
 		{
