@@ -112,9 +112,28 @@ namespace utl
 	class MemoryAllocatorRef
 	{
 	public:
+
 		explicit MemoryAllocatorRef(MemoryAllocatorDelegate* alloc = nullptr)
 			:alloc_(alloc)
 		{
+		}
+
+		MemoryAllocatorRef(const MemoryAllocatorRef& alloc)noexcept
+			:alloc_(alloc.alloc_)
+		{}
+		MemoryAllocatorRef& operator=(const MemoryAllocatorRef& alloc)noexcept
+		{
+			alloc_ = alloc.alloc_;
+			return *this;
+		}
+
+		MemoryAllocatorRef(MemoryAllocatorRef&& alloc)noexcept
+			:alloc_(alloc.alloc_)
+		{}
+		MemoryAllocatorRef& operator=(MemoryAllocatorRef&& alloc)noexcept
+		{
+			alloc_ = Move(alloc.alloc_);
+			return *this;
 		}
 
 		MemoryAllocatorDelegate* Get()const
