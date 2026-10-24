@@ -39,6 +39,13 @@ namespace utl
 			, capacity_(0)
 		{
 		}
+		explicit Vector(const MemoryAllocatorRef& allocator)
+			: alloc_(allocator)
+			, begin_(nullptr)
+			, size_(0)
+			, capacity_(0)
+		{
+		}
 
 		/// <summary>
 		/// キャパシティとメモリアロケータを指定して作成する
@@ -46,6 +53,14 @@ namespace utl
 		/// <param name="capacity">0ならメモリを確保しない</param>
 		/// <param name="allocator">nullptrならC++標準の手段で確保する</param>
 		Vector(uint32_t capacity, MemoryAllocatorDelegate* allocator)
+			: alloc_(allocator)
+			, begin_(nullptr)
+			, size_(0)
+			, capacity_(0)
+		{
+			Reserve(capacity);
+		}
+		Vector(uint32_t capacity, const MemoryAllocatorRef& allocator)
 			: alloc_(allocator)
 			, begin_(nullptr)
 			, size_(0)
