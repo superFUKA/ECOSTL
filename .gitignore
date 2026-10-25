@@ -5,3 +5,9 @@
 # CppBuildの中間ファイル・成果物
 /.ecobuild/.cppbuild/output/
 /.ecobuild/.cppbuild/operations/
+
+# コンパイラーの出力（試しのコンパイルの残りを混ぜない）
+*.exe
+*.obj
+*.pdb
+*.ilk
