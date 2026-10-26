@@ -1,6 +1,4 @@
 #pragma once
-#include <cassert>
-#include <cstdint>
 #include "../../Core/Utility.h"
 #include "../../Memory/Allocate/MemoryAllocatorAPI.h"
 

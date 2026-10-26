@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cassert>
 
 namespace utl
 {
@@ -18,6 +19,7 @@ namespace utl
 	/// <param name="align">合わせる境界のバイト数</param>
 	/// <returns></returns>
 	[[nodiscard]] void* AlignedAllocate(uint32_t size, uint32_t align = 0);
+
 
 	/// <summary>
 	/// AlignedAllocateで確保したメモリを開放する
