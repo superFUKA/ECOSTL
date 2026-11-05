@@ -17,7 +17,7 @@
     "git_sources": {
       "ECOCppLogger": {
         "path": ".ecobuild/.cppbuild",
-        "revision": "86f68d87bc98cf46adff548475cd99e031964e2c",
+        "revision": "39a33e4023713908ca779b3d34e23974f37cb450",
         "url": "https://github.com/superFUKA/ECOCppLogger.git"
       }
     },

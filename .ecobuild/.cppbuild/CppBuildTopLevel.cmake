@@ -73,7 +73,7 @@ function(_cppbuild_git_source directory url revision solution)
     "\n  ${directory}: ${url} at ${revision} (${_reason})\n    git clone ${url} ${directory} && git -C ${directory} checkout ${revision}")
 endfunction()
 set_property(GLOBAL PROPERTY CPPBUILD_GIT_MISSING)
-_cppbuild_git_source("../../deps/ECOCppLogger" "https://github.com/superFUKA/ECOCppLogger.git" 86f68d87bc98cf46adff548475cd99e031964e2c ".ecobuild/.cppbuild")
+_cppbuild_git_source("../../deps/ECOCppLogger" "https://github.com/superFUKA/ECOCppLogger.git" 39a33e4023713908ca779b3d34e23974f37cb450 ".ecobuild/.cppbuild")
 get_property(_cppbuild_missing GLOBAL PROPERTY CPPBUILD_GIT_MISSING)
 if(_cppbuild_missing)
   message(FATAL_ERROR "Linked Solutions could not be fetched with git. Place each one by hand (paths are relative to ${CMAKE_CURRENT_SOURCE_DIR}):${_cppbuild_missing}")
@@ -81,7 +81,9 @@ endif()
 
 # Projects requested from linked Solutions, resolved with ECOSTL as the top level.
 set(CPPBUILD_REQUEST_ec41152aa7e64c4db61861a7fbd9b2cd STATIC)  # ECOCppLogger::ECOCppLogger
+set(CPPBUILD_REQUEST_2a15a8e988c9437e87b75a85f4e52085 DISPLAY)  # ECOCppLogger::ECOCppLoggerBench
 set(CPPBUILD_REQUEST_6cb304bbc2b545e2afb59b5c975f803e DISPLAY)  # ECOCppLogger::ECOCppLoggerTest
+set(CPPBUILD_REQUEST_e1b70685d7ba4bd0af2856ce489da2ef DISPLAY)  # ECOCppLogger::ECOCppLoggerView
 
 # Linked Solutions add only the Projects requested above.
 set(CPPBUILD_LINKED ON)
