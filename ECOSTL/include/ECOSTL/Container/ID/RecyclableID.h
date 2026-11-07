@@ -42,6 +42,7 @@ namespace utl
 		}
 
 		// ID を 1 つ発行する。リサイクル待ちがあれば再利用し、なければ新しい添え字を作る(表の拡張で確保が起きうる)
+		// 確保できなければ version が 0 の ID を返す(有効な ID の version は 1 以上なので、どの ID とも一致しない)
 		RecyclableID Allocate()
 		{
 			RecyclableID result;
@@ -58,17 +59,22 @@ namespace utl
 		/// <param name="result"></param>
 		/// <param name="indexPtr"></param>
 		/// <param name="versionPtr"></param>
+		/// <returns>確保できなければ false（result は変えず、状態も変わらない）</returns>
 		template<typename IDType, typename IndexType, typename VersionType>
-		void Allocate(IDType& result, IndexType IDType::* indexPtr, VersionType IDType::* versionPtr)
+		bool Allocate(IDType& result, IndexType IDType::* indexPtr, VersionType IDType::* versionPtr)
 		{
 			uint32_t index = 0;
 			uint32_t version = 0;
 
-			// リサイクル待ちの添え字がなければ新しく生成して終了
+			// リサイクル待ちの添え字がなければ新しく生成する（表を広げられたときだけ添え字を進める）
 			if (recycleWaitIndeces_.IsEmpty())
 			{
-				index = nextGeneIndex_++;
-				indexToInfo_.Resize(index + 1);
+				index = nextGeneIndex_;
+				if (!indexToInfo_.Resize(index + 1))
+				{
+					return false;
+				}
+				++nextGeneIndex_;
 			}
 			else
 			{
@@ -83,6 +89,7 @@ namespace utl
 
 			result.*indexPtr = static_cast<IndexType>(index);
 			result.*versionPtr = static_cast<VersionType>(version);
+			return true;
 		}
 
 		/// <summary>
@@ -91,9 +98,18 @@ namespace utl
 		/// </summary>
 		/// <param name="num">生成する数</param>
 		/// <param name="onAllocate">生成した添え字とバージョンを受け取る関数 (uint32_t index, uint32_t version)</param>
+		/// <returns>確保できなければ false（1つも生成せず、onAllocate も呼ばない）</returns>
 		template<typename Func>
-		void AllocateMany(const uint32_t num, Func&& onAllocate)
+		bool AllocateMany(const uint32_t num, Func&& onAllocate)
 		{
+			// 新しい添え字が要るなら、先に表を広げる（失敗したら何も生成しない）
+			const uint32_t recycleNum = recycleWaitIndeces_.Size();
+			const uint32_t newNum = num > recycleNum ? num - recycleNum : 0;
+			if (newNum > 0 && !indexToInfo_.Resize(nextGeneIndex_ + newNum))
+			{
+				return false;
+			}
+
 			uint32_t allocated = 0;
 			// リサイクル待ちの添え字を使う
 			while (allocated < num && !recycleWaitIndeces_.IsEmpty())
@@ -106,15 +122,9 @@ namespace utl
 				++allocated;
 			}
 
-			// 残りは新しい添え字を連続して生成し、情報の配列の拡張を一度で済ませる
-			uint32_t remaining = num - allocated;
-			if (remaining == 0)
-			{
-				return;
-			}
-			uint32_t beginIndex = nextGeneIndex_;
-			nextGeneIndex_ += remaining;
-			indexToInfo_.Resize(nextGeneIndex_);
+			// 残りは、先に広げた表の新しい添え字を連続して使う
+			const uint32_t beginIndex = nextGeneIndex_;
+			nextGeneIndex_ += newNum;
 			IDInfo* infos = indexToInfo_.Begin();
 			for (uint32_t index = beginIndex; index < nextGeneIndex_; ++index)
 			{
@@ -122,41 +132,44 @@ namespace utl
 				info.activate = true;
 				onAllocate(index, ++info.version);
 			}
+			return true;
 		}
 
-		/// <summary>
-		/// まとめて開放するためにリサイクル待ちの容量を確保する
-		/// </summary>
 		/// <summary>添え字の表の容量を確保する(確保済みの添え字の数 + これから確保する数。確保で伸びないようにする)</summary>
-		void ReserveIndices(const uint32_t num)
+		/// <returns>確保できなければ false</returns>
+		bool ReserveIndices(const uint32_t num)
 		{
-			indexToInfo_.ReserveSlack(num);
+			return indexToInfo_.ReserveSlack(num);
 		}
 
-		void ReserveRecycle(const uint32_t num)
+		/// <summary>まとめて開放するために、リサイクル待ちの容量を今の数 + num 確保する</summary>
+		/// <returns>確保できなければ false</returns>
+		bool ReserveRecycle(const uint32_t num)
 		{
-			recycleWaitIndeces_.ReserveSlack(recycleWaitIndeces_.Size() + num);
+			return recycleWaitIndeces_.ReserveSlack(recycleWaitIndeces_.Size() + num);
 		}
 
-		void Deallocate(const RecyclableID& id)
+		bool Deallocate(const RecyclableID& id)
 		{
-			Deallocate(id.index, id.version);
+			return Deallocate(id.index, id.version);
 		}
 
-		// ID を開放してリサイクル待ちに積む。すでに無効な ID は何もしない
-		void Deallocate(const uint32_t index, const uint32_t version)
+		// ID を開放してリサイクル待ちに積む
+		// すでに無効な ID なら何もせず false。リサイクル待ちを広げられなければ、ID は有効なまま false
+		bool Deallocate(const uint32_t index, const uint32_t version)
 		{
-			// すでに無効なIDならなにもしない
 			if (!CheckActive(index, version))
 			{
-				return;
+				return false;
 			}
 
-			// 添え字を無効にし、添え字をリサイクル待ちリストに追加
-			IDInfo& info = indexToInfo_[index];
-			info.activate = false;
-			recycleWaitIndeces_.EmplaceBack(index);
-
+			// 先にリサイクル待ちへ積み、積めたときだけ添え字を無効にする
+			if (recycleWaitIndeces_.EmplaceBack(index) == nullptr)
+			{
+				return false;
+			}
+			indexToInfo_[index].activate = false;
+			return true;
 		}
 
 		/// <summary>
