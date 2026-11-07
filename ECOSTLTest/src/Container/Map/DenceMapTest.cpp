@@ -1,5 +1,6 @@
 // ヘッダー単体でコンパイルできることを確かめるため、最初に読み込む
 #include "ECOSTL/Container/Map/DenceMap.h"
+#include "ECOSTL/Container/Map/ChunkDenceMap.h"
 
 #include <gtest/gtest.h>
 
@@ -323,4 +324,81 @@ TEST(DenceMapTest, SwapKeysMovesToInactiveKey) {
 
 	EXPECT_FALSE(map.SwapKeys(8, 9));
 	EXPECT_TRUE(map.SwapKeys(7, 7));
+}
+
+namespace failure
+{
+	// budget 回までは確保に成功し、それより後は失敗するアロケータ（budget が負なら失敗しない）
+	class BudgetAllocator
+	{
+	public:
+		BudgetAllocator()
+		{
+			api.Register<BudgetAllocator, &BudgetAllocator::Allocate, &BudgetAllocator::Free>(this);
+		}
+		void* Allocate(uint32_t size, uint32_t align)
+		{
+			if (budget == 0)
+			{
+				return nullptr;
+			}
+			if (budget > 0)
+			{
+				--budget;
+			}
+			return utl::AlignedAllocate(size, align);
+		}
+		bool Free(void* memory)
+		{
+			utl::AlignedFree(memory);
+			return true;
+		}
+
+		int budget = -1;
+		utl::MemoryAllocatorDelegate api;
+	};
+}
+
+// キーの表を広げられなければ、何も変えずに nullptr を返す
+TEST(DenceMap, InsertFailureOnTableReturnsNull)
+{
+	failure::BudgetAllocator alloc;
+	utl::DenceMap<int> map(&alloc.api);
+	alloc.budget = 0;
+
+	EXPECT_EQ(map.Insert(3, 7), nullptr);
+	EXPECT_EQ(map.Size(), 0u);
+	EXPECT_FALSE(map.CheckActive(3));
+}
+
+// キーは登録できても値を足せなければ、登録したキーを戻して nullptr を返す
+TEST(DenceMap, InsertFailureOnValueRollsBackKey)
+{
+	failure::BudgetAllocator alloc;
+	utl::DenceMap<int> map(&alloc.api);
+	alloc.budget = 2;  // キー → 添え字、添え字 → キー の2つの表だけ確保できる
+
+	EXPECT_EQ(map.Insert(0, 7), nullptr);
+	EXPECT_EQ(map.Size(), 0u);
+	EXPECT_FALSE(map.CheckActive(0));
+	EXPECT_EQ(map.Find(0), nullptr);
+
+	// 確保できるようになれば、同じキーを普通に足せる
+	alloc.budget = -1;
+	int* added = map.Insert(0, 7);
+	ASSERT_NE(added, nullptr);
+	EXPECT_EQ(*added, 7);
+	EXPECT_EQ(map.Size(), 1u);
+}
+
+// ChunkDenceMap も、値を足せなければ登録したキーを戻す
+TEST(ChunkDenceMap, InsertFailureOnValueRollsBackKey)
+{
+	failure::BudgetAllocator alloc;
+	utl::ChunkDenceMap<int> map(4, &alloc.api);
+	alloc.budget = 2;
+
+	EXPECT_EQ(map.Insert(1, 5), nullptr);
+	EXPECT_EQ(map.Size(), 0u);
+	EXPECT_EQ(map.Find(1), nullptr);
 }

@@ -95,6 +95,7 @@ namespace utl
 		//-----------------------------------
 
 		// key を登録し、割り当てた添え字を返す。登録済みならその添え字を返す。key+1 までテーブルが伸びる（再確保あり）ので、キーが大きいとメモリを使う。
+		// 確保できない、または key が NULL_VALUE なら、何も変えずに NULL_VALUE を返す
 		DenceIndex Insert(const SparseKey key)
 		{
 			// すでに追加済みのキーならそのまま返す
@@ -102,19 +103,22 @@ namespace utl
 			{
 				return keyToIndex_[key];
 			}
-
-			// 添え字を求めた後に要素数を増加
-			DenceIndex index = size_++;
-
-			// まだ追加してなければ追加
-			if (!keyToIndex_.IsValidIndex(key))
+			if (key == NULL_VALUE)
 			{
-				keyToIndex_.Resize(key + 1, NULL_VALUE);
+				return NULL_VALUE;
 			}
-			if (!indexToKey_.IsValidIndex(index))
+
+			// 先に2つの表を広げ、両方広げられたときだけ登録する
+			const DenceIndex index = static_cast<DenceIndex>(size_);
+			if (!keyToIndex_.IsValidIndex(key) && !keyToIndex_.Resize(key + 1, NULL_VALUE))
 			{
-				indexToKey_.Resize(index + 1, NULL_VALUE);
+				return NULL_VALUE;
 			}
+			if (!indexToKey_.IsValidIndex(index) && !indexToKey_.Resize(index + 1, NULL_VALUE))
+			{
+				return NULL_VALUE;
+			}
+			++size_;
 			keyToIndex_[key] = index;
 			indexToKey_[index] = key;
 

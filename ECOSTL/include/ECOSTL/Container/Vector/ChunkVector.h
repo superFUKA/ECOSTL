@@ -220,14 +220,14 @@ namespace utl
 		/// </summary>
 		/// <typeparam name="...ArgTypes"></typeparam>
 		/// <param name="...args"></param>
-		/// <returns>追加した要素のポインタ</returns>
+		/// <returns>追加した要素のポインタ。確保できなければ何も変えずに nullptr</returns>
 		template<typename...ArgTypes>
 		Type* EmplaceBack(ArgTypes&&...args)
 		{
 			// チャンクが無い、または末尾のチャンクに空きがなければ作成
-			if (chunks_.IsEmpty() || chunks_.Back()->Size() >= chunkSize_)
+			if ((chunks_.IsEmpty() || chunks_.Back()->Size() >= chunkSize_) && !AddChunk())
 			{
-				AddChunk();
+				return nullptr;
 			}
 			return chunks_.Back()->EmplaceBack(Forward<ArgTypes>(args)...);
 		}
@@ -450,27 +450,40 @@ namespace utl
 		/// <typeparam name="...ArgTypes"></typeparam>
 		/// <param name="size"></param>
 		/// <param name="...args">増える要素のコンストラクタ引数</param>
+		/// <returns>確保できなければ false。足すチャンクを作れなかったときは何も変わらない</returns>
 		template<typename...ArgTypes>
-		void Resize(const uint32_t size, const ArgTypes&...args)
+		bool Resize(const uint32_t size, const ArgTypes&...args)
 		{
 			const uint32_t chunkNum = size == 0 ? 0 : GetChunkIndex(size - 1) + 1;
 
+			// 足りないチャンクを先に作る。作れなければ、作った分を外して戻す
+			const uint32_t oldChunkNum = chunks_.Size();
+			while (chunks_.Size() < chunkNum)
+			{
+				if (!AddChunk())
+				{
+					while (chunks_.Size() > oldChunkNum)
+					{
+						chunks_.PopBack();
+					}
+					return false;
+				}
+			}
 			// 多すぎるチャンクを開放
 			while (chunks_.Size() > chunkNum)
 			{
 				chunks_.PopBack();
 			}
-			// 足りないチャンクを作成
-			while (chunks_.Size() < chunkNum)
-			{
-				AddChunk();
-			}
 			// 末尾以外は満杯、末尾は残りの個数にそろえる
 			for (uint32_t i = 0; i < chunkNum; i++)
 			{
 				const uint32_t chunkElemNum = (i + 1 < chunkNum) ? chunkSize_ : GetValueIndex(size - 1) + 1;
-				chunks_[i].Resize(chunkElemNum, args...);
+				if (!chunks_[i].Resize(chunkElemNum, args...))
+				{
+					return false;
+				}
 			}
+			return true;
 		}
 
 	private:
@@ -478,11 +491,21 @@ namespace utl
 		/// <summary>
 		/// 末尾に空のチャンクを追加する
 		/// </summary>
-		void AddChunk()
+		/// <returns>確保できなければ false（チャンクは増えない）</returns>
+		bool AddChunk()
 		{
 			Vector<Type>* chunk = chunks_.EmplaceBack(valueMemAlloc_);
-			assert(chunk != nullptr && "チャンクを追加できませんでした");
-			chunk->Reserve(chunkSize_);
+			if (chunk == nullptr)
+			{
+				return false;
+			}
+			// 要素の場所が動かないよう、チャンクは最初に満杯の分を確保する。できなければチャンクごと外す
+			if (!chunk->Reserve(chunkSize_))
+			{
+				chunks_.PopBack();
+				return false;
+			}
+			return true;
 		}
 
 

@@ -5,6 +5,39 @@
 
 #include <string>
 
+namespace
+{
+	// budget 回までは確保に成功し、それより後は失敗するアロケータ（budget が負なら失敗しない）
+	class BudgetAllocator
+	{
+	public:
+		BudgetAllocator()
+		{
+			api.Register<BudgetAllocator, &BudgetAllocator::Allocate, &BudgetAllocator::Free>(this);
+		}
+		void* Allocate(uint32_t size, uint32_t align)
+		{
+			if (budget == 0)
+			{
+				return nullptr;
+			}
+			if (budget > 0)
+			{
+				--budget;
+			}
+			return utl::AlignedAllocate(size, align);
+		}
+		bool Free(void* memory)
+		{
+			utl::AlignedFree(memory);
+			return true;
+		}
+
+		int budget = -1;
+		utl::MemoryAllocatorDelegate api;
+	};
+}
+
 TEST(ChunkVectorDevTest, PushBackAcrossBlocks)
 {
 	utl::ChunkVector<int> v(4);
@@ -107,4 +140,35 @@ TEST(ChunkVectorDevTest, ConstAccess)
 	EXPECT_NE(cv.Begin(), nullptr);
 	EXPECT_EQ(cv.BeginFromChunk(5), nullptr);
 	EXPECT_EQ(*cv.Back(), 1);
+}
+
+// チャンクを作れなければ、EmplaceBack は何も変えずに nullptr を返す
+TEST(ChunkVectorDevTest, EmplaceBackFailureReturnsNull)
+{
+	BudgetAllocator alloc;
+	utl::ChunkVector<int> v(4, &alloc.api);
+	alloc.budget = 1;  // チャンクの一覧は確保できるが、チャンクの中身は確保できない
+
+	EXPECT_EQ(v.EmplaceBack(1), nullptr);
+	EXPECT_EQ(v.Size(), 0u);
+	EXPECT_EQ(v.GetChunkNum(), 0u);
+
+	alloc.budget = -1;
+	ASSERT_NE(v.EmplaceBack(1), nullptr);
+	EXPECT_EQ(v.Size(), 1u);
+}
+
+// 足すチャンクを作れなければ、Resize は false を返し、何も変わらない
+TEST(ChunkVectorDevTest, ResizeFailureKeepsContents)
+{
+	BudgetAllocator alloc;
+	utl::ChunkVector<int> v(4, &alloc.api);
+	ASSERT_TRUE(v.Resize(3, 9));
+	const uint32_t chunkNum = v.GetChunkNum();
+	alloc.budget = 1;  // チャンクを1つ足すところまでで失敗する
+
+	EXPECT_FALSE(v.Resize(12));
+	EXPECT_EQ(v.Size(), 3u);
+	EXPECT_EQ(v.GetChunkNum(), chunkNum);
+	EXPECT_EQ(v[2], 9);
 }
