@@ -56,7 +56,7 @@ namespace utl
 		/// </summary>
 		/// <param name="key"></param>
 		/// <param name="src"></param>
-		/// <returns></returns>
+		/// <returns>追加した要素。確保できなければ何も変えずに nullptr</returns>
 		Type* Insert(const SparseKey key, const Type& src)
 		{
 			DenceIndex index = NULL_VALUE;
@@ -70,9 +70,19 @@ namespace utl
 			}
 
 			index = table_.Insert(key);
+			if (index == NULL_VALUE)
+			{
+				return nullptr;
+			}
 			// 要素をコンテナに追加
 			// 有効な要素は前詰めで配置されるため、末尾に追加すればいい
-			return values_.EmplaceBack(src);
+			Type* added = values_.EmplaceBack(src);
+			if (added == nullptr)
+			{
+				// 要素を足せなければ、登録したキーを戻す（末尾に登録したので他のキーは動かない）
+				table_.Remove(key);
+			}
+			return added;
 		}
 
 		/// <summary>
@@ -81,7 +91,7 @@ namespace utl
 		/// <typeparam name="...ArgTypes"></typeparam>
 		/// <param name="key"></param>
 		/// <param name="...args"></param>
-		/// <returns></returns>
+		/// <returns>追加した要素。確保できなければ何も変えずに nullptr</returns>
 		template<typename...ArgTypes>
 		Type* Insert(const SparseKey key, ArgTypes&&...args)
 		{
@@ -96,9 +106,19 @@ namespace utl
 			}
 
 			index = table_.Insert(key);
+			if (index == NULL_VALUE)
+			{
+				return nullptr;
+			}
 			// 要素をコンテナに追加
 			// 有効な要素は前詰めで配置されるため、末尾に追加すればいい
-			return values_.EmplaceBack(args...);
+			Type* added = values_.EmplaceBack(args...);
+			if (added == nullptr)
+			{
+				// 要素を足せなければ、登録したキーを戻す（末尾に登録したので他のキーは動かない）
+				table_.Remove(key);
+			}
+			return added;
 		}
 
 		//------------------------------------------
