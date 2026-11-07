@@ -539,44 +539,53 @@ namespace utl
 		/// 余裕を持って容量を capacity 以上にする（1.5 倍ずつ増やした大きさにする。縮小はしない）
 		/// 少しずつ増える使い方で、確保の回数を減らすために使う
 		/// </summary>
-		inline void ReserveSlack(const uint32_t capacity)
+		/// <returns>確保できなければ false（容量は変わらない）</returns>
+		inline bool ReserveSlack(const uint32_t capacity)
 		{
 			if (capacity_ >= capacity)
 			{
-				return;
+				return true;
 			}
-			Reserve(GetSlack(capacity_, capacity));
+			return Reserve(GetSlack(capacity_, capacity));
 		}
 
 		/// <summary>容量を、要素数に余裕を持たせた大きさに合わせる（Fit より少し大きめ。縮めもする）</summary>
-		inline void FitSlack()
+		/// <returns>確保できなければ false（容量は変わらない）</returns>
+		inline bool FitSlack()
 		{
 			const uint32_t target = GetSlack(1, size_);
 			if (target < capacity_)
 			{
-				ShrinkTo(target);
+				return ShrinkTo(target);
 			}
-			else
-			{
-				Reserve(target);
-			}
+			return Reserve(target);
 		}
 
 		/// <summary>全要素を捨てて、count 個の value のコピーで置き換える</summary>
-		inline void Assign(const uint32_t count, const Type& value)
+		/// <returns>確保できなければ false（要素は空になる）</returns>
+		inline bool Assign(const uint32_t count, const Type& value)
 		{
 			Clear();
-			Reserve(count);
+			if (!Reserve(count))
+			{
+				return false;
+			}
 			for (uint32_t i = 0; i < count; ++i) { EmplaceBack(value); }
+			return true;
 		}
 
 		/// <summary>全要素を捨てて、src から count 個のコピーで置き換える（src が自分の要素を指していてはいけない）</summary>
-		inline void Assign(const Type* src, const uint32_t count)
+		/// <returns>確保できなければ false（要素は空になる）</returns>
+		inline bool Assign(const Type* src, const uint32_t count)
 		{
 			assert((count == 0 || !IsOwnElement(src)) && "自分の要素から Assign はできません");
 			Clear();
-			Reserve(count);
+			if (!Reserve(count))
+			{
+				return false;
+			}
 			for (uint32_t i = 0; i < count; ++i) { EmplaceBack(src[i]); }
+			return true;
 		}
 
 		/// <summary>
@@ -651,15 +660,15 @@ namespace utl
 		/// 減らしてもメモリは開放しない
 		/// </summary>
 		/// <param name="...args">自分の要素を渡してもよい</param>
+		/// <returns>確保できなければ false（要素数も中身も変わらない）</returns>
 		template<typename...ArgTypes>
-		inline void Resize(const uint32_t size, const ArgTypes&...args)
+		inline bool Resize(const uint32_t size, const ArgTypes&...args)
 		{
 			// もしメモリが足りなければ、新しいメモリに先に作ってから移す
 			if (size > capacity_)
 			{
-				ReallocateAndConstruct(GetGrowCapacity(size), size,
+				return ReallocateAndConstruct(GetGrowCapacity(size), size,
 					[&](Type* ptr) { new (ptr) Type(args...); });
-				return;
 			}
 
 			// 要素数が増えたならその分を初期化
@@ -675,22 +684,23 @@ namespace utl
 			}
 
 			size_ = size;
+			return true;
 		}
 
 		/// <summary>
 		/// キャパシティを拡大
 		/// 縮小はしない
 		/// </summary>
-		/// <param name="capacity"></param>
-		inline void Reserve(const uint32_t capacity)
+		/// <returns>確保できなければ false（容量は変わらない）</returns>
+		inline bool Reserve(const uint32_t capacity)
 		{
 			// 指定した容量が今と同じかそれ以下だったら何もしない
 			if (capacity_ >= capacity)
 			{
-				return;
+				return true;
 			}
 
-			SetCapacity(capacity);
+			return SetCapacity(capacity);
 		}
 
 		// メモリの開放
@@ -717,9 +727,10 @@ namespace utl
 		/// キャパシティを要素数に合わせる
 		/// 要素数が0ならメモリを開放する
 		/// </summary>
-		inline void Fit()
+		/// <returns>確保できなければ false（容量は変わらない）</returns>
+		inline bool Fit()
 		{
-			SetCapacity(size_);
+			return SetCapacity(size_);
 		}
 
 		/// <summary>
@@ -727,15 +738,15 @@ namespace utl
 		/// 拡大はしない
 		/// 要素数より小さくはならない
 		/// </summary>
-		/// <param name="capacity"></param>
-		inline void ShrinkTo(const uint32_t capacity)
+		/// <returns>確保できなければ false（容量は変わらない）</returns>
+		inline bool ShrinkTo(const uint32_t capacity)
 		{
 			// 指定した容量が今と同じかそれ以上だったら何もしない
 			if (capacity_ <= capacity)
 			{
-				return;
+				return true;
 			}
-			SetCapacity(capacity < size_ ? size_ : capacity);
+			return SetCapacity(capacity < size_ ? size_ : capacity);
 		}
 
 		/// <summary>
@@ -743,21 +754,21 @@ namespace utl
 		/// 要素数より小さい値なら何もしない
 		/// 0ならメモリを開放する
 		/// </summary>
-		/// <param name="capacity"></param>
-		inline void SetCapacity(const uint32_t capacity)
+		/// <returns>確保できなければ false（容量は変わらない）。要素数より小さい値で何もしなかったときは true</returns>
+		inline bool SetCapacity(const uint32_t capacity)
 		{
 			if (capacity == capacity_ || capacity < size_)
 			{
-				return;
+				return true;
 			}
 
 			if (capacity == 0)
 			{
 				Reset();
-				return;
+				return true;
 			}
 
-			ReallocateAndConstruct(capacity, size_, [](Type*) {});
+			return ReallocateAndConstruct(capacity, size_, [](Type*) {});
 		}
 
 	private:
@@ -780,13 +791,9 @@ namespace utl
 				return EmplaceBack(Forward<ArgTypes>(args)...);
 			}
 
-			if (capacity_ <= size_)
+			if (capacity_ <= size_ && !Grow(size_ + 1))
 			{
-				Grow(size_ + 1);
-				if (capacity_ <= size_)
-				{
-					return nullptr;
-				}
+				return nullptr;
 			}
 
 			if constexpr (IsTriviallyCopyableV<Type>)
@@ -836,15 +843,15 @@ namespace utl
 		/// <summary>
 		/// 余裕をもってキャパシティを拡大する
 		/// </summary>
-		inline void Grow(const uint32_t need)
+		inline bool Grow(const uint32_t need)
 		{
 			// 指定した容量が今と同じかそれ以下だったら何もしない
 			if (capacity_ >= need)
 			{
-				return;
+				return true;
 			}
 
-			SetCapacity(GetGrowCapacity(need));
+			return SetCapacity(GetGrowCapacity(need));
 		}
 
 		/// <summary>
@@ -879,7 +886,7 @@ namespace utl
 			{
 				UTL_LOG(Warn | ::utl::logtype::Container, "vector grow failed size={size} newCapacity={newCapacity} elementSize={elementSize}", size_, newCapacity, static_cast<uint32_t>(sizeof(Type)));
 			}
-			assert(newBegin != nullptr && "メモリを確保できませんでした");
+			// 失敗は戻り値で呼ぶ側へ伝える（止めない）
 			if (newBegin == nullptr)
 			{
 				return false;

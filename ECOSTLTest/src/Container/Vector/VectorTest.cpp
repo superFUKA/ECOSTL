@@ -80,6 +80,10 @@ namespace
 		void* Allocate(uint32_t size, uint32_t align)
 		{
 			(void)align;
+			if (fail)
+			{
+				return nullptr;
+			}
 			++allocCount;
 			void* mem = malloc(size);
 			live.insert(mem);
@@ -100,6 +104,7 @@ namespace
 		int allocCount = 0;
 		int freeCount = 0;
 		int badFreeCount = 0;
+		bool fail = false;  // true の間は確保に失敗する
 		std::set<void*> live;
 	};
 
@@ -644,4 +649,82 @@ TEST_F(VectorTest, PushBackGrowthIsAmortized) {
 
 	// 1.5倍ずつ広がるので確保の回数は少ない
 	EXPECT_LT(alloc.allocCount, 30);
+}
+
+// 確保に失敗したら、容量を変える関数は false を返し、中身はそのまま残る
+TEST_F(VectorTest, GrowFailureReturnsFalseAndKeepsContents) {
+	utl::Vector<Tracked> v(&delegate);
+	v.Resize(3, Tracked(7));
+	const uint32_t capacity = v.Capacity();
+	alloc.fail = true;
+
+	EXPECT_FALSE(v.Resize(capacity + 1));
+	EXPECT_FALSE(v.Reserve(capacity + 1));
+	EXPECT_FALSE(v.ReserveSlack(capacity + 1));
+	EXPECT_FALSE(v.SetCapacity(capacity + 1));
+	EXPECT_EQ(v.Size(), 3u);
+	EXPECT_EQ(v.Capacity(), capacity);
+	for (const Tracked& e : v)
+	{
+		EXPECT_EQ(e.value, 7);
+	}
+	EXPECT_EQ(Tracked::alive, 3);
+}
+
+// 確保が要らない操作は、失敗するアロケータでも true を返す
+TEST_F(VectorTest, NoAllocationNeededReturnsTrue) {
+	utl::Vector<int> v(&delegate);
+	v.Reserve(8);
+	v.Resize(4);
+	alloc.fail = true;
+
+	EXPECT_TRUE(v.Resize(8));
+	EXPECT_TRUE(v.Resize(2));
+	EXPECT_TRUE(v.Reserve(8));
+	EXPECT_TRUE(v.ReserveSlack(8));
+	EXPECT_TRUE(v.ShrinkTo(16));
+	EXPECT_EQ(v.Size(), 2u);
+}
+
+// 縮めるときの確保に失敗したら、容量は変わらない
+TEST_F(VectorTest, ShrinkFailureKeepsCapacity) {
+	utl::Vector<int> v(&delegate);
+	v.Reserve(100);
+	v.Resize(10, 5);
+	alloc.fail = true;
+
+	EXPECT_FALSE(v.Fit());
+	EXPECT_FALSE(v.ShrinkTo(20));
+	EXPECT_FALSE(v.FitSlack());
+	EXPECT_EQ(v.Capacity(), 100u);
+	EXPECT_EQ(v.Size(), 10u);
+	EXPECT_EQ(v[9], 5);
+}
+
+// Assign は確保に失敗したら false を返し、空になる
+TEST_F(VectorTest, AssignFailureLeavesEmpty) {
+	utl::Vector<int> v(&delegate);
+	alloc.fail = true;
+	const int src[3] = { 1, 2, 3 };
+
+	EXPECT_FALSE(v.Assign(3u, 9));
+	EXPECT_TRUE(v.IsEmpty());
+	EXPECT_FALSE(v.Assign(src, 3u));
+	EXPECT_TRUE(v.IsEmpty());
+
+	alloc.fail = false;
+	EXPECT_TRUE(v.Assign(src, 3u));
+	EXPECT_EQ(v.Size(), 3u);
+}
+
+// 途中への挿入も、確保に失敗したら nullptr を返し、中身はそのまま
+TEST_F(VectorTest, InsertFailureReturnsNull) {
+	utl::Vector<int> v(&delegate);
+	v.Resize(2, 1);
+	v.Fit();
+	alloc.fail = true;
+
+	EXPECT_EQ(v.Insert(0, 5), nullptr);
+	EXPECT_EQ(v.Size(), 2u);
+	EXPECT_EQ(v[0], 1);
 }
