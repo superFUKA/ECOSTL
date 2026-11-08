@@ -371,7 +371,7 @@ namespace utl
 			Slot* newSlots = alloc_.template Allocate<Slot>(newCapacity);
 			if (newSlots == nullptr)
 			{
-				UTL_LOG(Warn | ::utl::logtype::Container, "hash table rehash failed count={count} capacity={capacity} newCapacity={newCapacity}", idToHash_.Size(), capacity_, newCapacity);
+				UTL_LOG(Warn | ::utl::logtype::Container, "ハッシュ表を広げられない count={count} capacity={capacity} newCapacity={newCapacity}", idToHash_.Size(), capacity_, newCapacity);
 				return false;
 			}
 			MemSet(newSlots, 0xFF, sizeof(Slot) * newCapacity);

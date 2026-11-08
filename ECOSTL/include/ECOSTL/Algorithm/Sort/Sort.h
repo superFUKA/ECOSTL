@@ -21,7 +21,7 @@ namespace utl
 			{
 				if (memory_ == nullptr)
 				{
-					UTL_LOG(Warn | ::utl::logtype::Container, "stable sort skipped: work buffer allocation failed num={num}", num);
+					UTL_LOG(Warn | ::utl::logtype::Container, "安定ソートを省いた（作業領域を確保できない） num={num}", num);
 				}
 			}
 			~SortWorkBuffer()

@@ -152,20 +152,20 @@ namespace utl
 			else
 			{
 #if defined(ECOSTL_DISABLE_DEFAULT_ALLOCATOR)
-				UTL_LOG(Error | ::utl::logtype::Memory, "allocate without allocator size={size} align={align}", size, align);
+				UTL_LOG(Error | ::utl::logtype::Memory, "アロケータが無いのに確保しようとした size={size} align={align}", size, align);
 				assert(false && "アロケータが渡されていません（ECOSTL_DISABLE_DEFAULT_ALLOCATOR が有効）");
 				return nullptr;
 #else
-				UTL_LOG_ONCE(Info | ::utl::logtype::Memory, "default allocator in use (no allocator was passed) size={size}", size);
+				UTL_LOG_ONCE(Info | ::utl::logtype::Memory, "既定のアロケータを使う（アロケータが渡されていない） size={size}", size);
 				memory = AlignedAllocate(size, align);
 #endif
 			}
 			if (memory == nullptr)
 			{
-				UTL_LOG(Error | ::utl::logtype::Memory, "allocate failed size={size} align={align} allocator={allocator}", size, align, static_cast<const void*>(alloc_));
+				UTL_LOG(Error | ::utl::logtype::Memory, "確保に失敗 size={size} align={align} allocator={allocator}", size, align, static_cast<const void*>(alloc_));
 				return nullptr;
 			}
-			UTL_LOG(Trace | ::utl::logtype::Memory, "allocate {ptr} size={size} align={align} allocator={allocator}", memory, size, align, static_cast<const void*>(alloc_));
+			UTL_LOG(Trace | ::utl::logtype::Memory, "確保 {ptr} size={size} align={align} allocator={allocator}", memory, size, align, static_cast<const void*>(alloc_));
 			return memory;
 		}
 
@@ -177,7 +177,7 @@ namespace utl
 		{
 			if (num > UINT32_MAX / sizeof(Type))
 			{
-				UTL_LOG(Error | ::utl::logtype::Memory, "allocate size overflow num={num} elementSize={elementSize}", num, static_cast<uint32_t>(sizeof(Type)));
+				UTL_LOG(Error | ::utl::logtype::Memory, "確保する大きさがあふれる num={num} elementSize={elementSize}", num, static_cast<uint32_t>(sizeof(Type)));
 				return nullptr;
 			}
 			void* mem = Allocate(static_cast<uint32_t>(sizeof(Type) * num), static_cast<uint32_t>(alignof(Type)));
@@ -193,18 +193,18 @@ namespace utl
 			{
 				return true;
 			}
-			UTL_LOG(Trace | ::utl::logtype::Memory, "free {ptr} allocator={allocator}", allocated, static_cast<const void*>(alloc_));
+			UTL_LOG(Trace | ::utl::logtype::Memory, "開放 {ptr} allocator={allocator}", allocated, static_cast<const void*>(alloc_));
 			if (alloc_ != nullptr)
 			{
 				const bool freed = alloc_->Free(allocated);
 				if (!freed)
 				{
-					UTL_LOG(Error | ::utl::logtype::Memory, "free failed {ptr} allocator={allocator}", allocated, static_cast<const void*>(alloc_));
+					UTL_LOG(Error | ::utl::logtype::Memory, "開放に失敗 {ptr} allocator={allocator}", allocated, static_cast<const void*>(alloc_));
 				}
 				return freed;
 			}
 #if defined(ECOSTL_DISABLE_DEFAULT_ALLOCATOR)
-			UTL_LOG(Error | ::utl::logtype::Memory, "free without allocator {ptr}", allocated);
+			UTL_LOG(Error | ::utl::logtype::Memory, "アロケータが無いのに開放しようとした {ptr}", allocated);
 			assert(false && "アロケータが渡されていません（ECOSTL_DISABLE_DEFAULT_ALLOCATOR が有効）");
 			return false;
 #else
