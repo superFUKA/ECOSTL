@@ -203,6 +203,39 @@ namespace utl
 		}
 
 		/// <summary>
+		/// src と共通のビットが1つでもあるか（確保しない）
+		/// </summary>
+		inline bool Intersects(const SparseBitSet& src) const
+		{
+			uint32_t i = 0;
+			uint32_t j = 0;
+			while (i < blockIndeces_.Size() && j < src.blockIndeces_.Size())
+			{
+				const uint32_t lookIndex = blockIndeces_[i];
+				const uint32_t srcIndex = src.blockIndeces_[j];
+				if (lookIndex < srcIndex)
+				{
+					++i;
+					continue;
+				}
+				if (lookIndex > srcIndex)
+				{
+					++j;
+					continue;
+				}
+				BitSet<BLOCK_BITS, uint32_t> common = bitBlocks_[i];
+				common.AndAssign(src.bitBlocks_[j]);
+				if (!common.IsEmpty())
+				{
+					return true;
+				}
+				++i;
+				++j;
+			}
+			return false;
+		}
+
+		/// <summary>
 		/// 和集合を代入する
 		/// </summary>
 		inline void OrAssign(const SparseBitSet& src)
