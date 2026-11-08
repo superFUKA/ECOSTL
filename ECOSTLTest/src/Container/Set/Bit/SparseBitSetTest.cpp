@@ -274,6 +274,19 @@ TEST(SparseBitSetTest, ContainAndOrdering)
 	EXPECT_FALSE(other <= big);
 }
 
+// 共通のビットがあるか：同じ塊にあってもビットが違えば共通でない。空の集合とは共通しない
+TEST(SparseBitSetTest, Intersects)
+{
+	const utl::SparseBitSet a = Make({ 1, 100, 5000 });
+	EXPECT_TRUE(a.Intersects(Make({ 5000 })));
+	EXPECT_TRUE(a.Intersects(Make({ 7, 100 })));
+	EXPECT_FALSE(a.Intersects(Make({ 2, 101, 4999 })));	// 同じ塊でもビットが違う
+	EXPECT_FALSE(a.Intersects(Make({ 64, 200000 })));		// 塊も違う
+	EXPECT_FALSE(a.Intersects(utl::SparseBitSet()));
+	EXPECT_FALSE(utl::SparseBitSet().Intersects(a));
+	EXPECT_TRUE(a.Intersects(a));
+}
+
 TEST(SparseBitSetTest, PlusMinusAssignNotAmbiguous)
 {
 	utl::SparseBitSet s;
