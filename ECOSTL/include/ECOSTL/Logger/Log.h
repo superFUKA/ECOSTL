@@ -2,7 +2,7 @@
 // ECOSTL・ECOECS がログを出すためのマクロ。ECOSTL のコードはこのマクロだけを使い、ロガーの実装を直接読み込まない。
 // 中身は ECOCppLogger（ECOSTL の依存先）の ECO_LOG_* にそのまま転送する。
 //
-//   UTL_LOG_TRACE("vector grow {old} -> {new}", oldCapacity, newCapacity);   // 書式は ECOCppLogger と同じ（名前付きの {}）
+//   UTL_LOG_TRACE("可変長配列を広げる {old} -> {new}", oldCapacity, newCapacity);   // 書式は ECOCppLogger と同じ（名前付きの {}）。文は日本語、{} の名前は英語（絞り込みの鍵になる）
 //   UTL_LOG_DEBUG / UTL_LOG_INFO / UTL_LOG_WARN / UTL_LOG_ERROR / UTL_LOG_FATAL
 //   UTL_ASSERT(cond, "書式", 引数...)   // 失敗したらログ・スタック・最近の値を残す（ECO_ASSERT）
 //   UTL_LOG(Debug | utl::logtype::Memory, "書式", 引数...)   // 型を付けたログ（見るときに --type memory で絞れる）

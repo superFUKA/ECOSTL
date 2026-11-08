@@ -22,7 +22,7 @@ TEST(Log, UtlLogReachesECOCppLogger)
 	config.stem = "ECOSTLLogTest";
 	ASSERT_TRUE(lg::start(config));
 	const int value = 42;
-	UTL_LOG_INFO("ecostl log check {value}", value);
+	UTL_LOG_INFO("ECOSTL のログの確認 {value}", value);
 	lg::writeOut();
 	lg::stop();
 
@@ -30,7 +30,7 @@ TEST(Log, UtlLogReachesECOCppLogger)
 	ASSERT_NE(path, nullptr);
 	std::string text;
 	ASSERT_TRUE(lg::readLog(path, lg::ViewFormat::Json, lg::ViewFilter{}, &AppendText, &text));
-	EXPECT_NE(text.find("ecostl log check"), std::string::npos);
+	EXPECT_NE(text.find("ECOSTL のログの確認"), std::string::npos);
 	EXPECT_NE(text.find("42"), std::string::npos);
 }
 
@@ -72,8 +72,8 @@ TEST(Log, AllocatorWritesMemoryLog)
 	std::string text;
 	ASSERT_TRUE(lg::readLog(path, lg::ViewFormat::Json, lg::ViewFilter{}, &AppendText, &text));
 	EXPECT_NE(text.find("\"memory\""), std::string::npos);
-	EXPECT_NE(text.find("allocate "), std::string::npos);
-	EXPECT_NE(text.find("free "), std::string::npos);
-	EXPECT_NE(text.find("allocate failed"), std::string::npos);
+	EXPECT_NE(text.find("確保 "), std::string::npos);
+	EXPECT_NE(text.find("開放 "), std::string::npos);
+	EXPECT_NE(text.find("確保に失敗"), std::string::npos);
 	EXPECT_NE(text.find("1234"), std::string::npos);
 }

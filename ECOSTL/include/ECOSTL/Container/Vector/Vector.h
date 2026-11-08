@@ -884,7 +884,7 @@ namespace utl
 			Type* newBegin = alloc_.Allocate<Type>(newCapacity);
 			if (newBegin == nullptr)
 			{
-				UTL_LOG(Warn | ::utl::logtype::Container, "vector grow failed size={size} newCapacity={newCapacity} elementSize={elementSize}", size_, newCapacity, static_cast<uint32_t>(sizeof(Type)));
+				UTL_LOG(Warn | ::utl::logtype::Container, "可変長配列を広げられない size={size} newCapacity={newCapacity} elementSize={elementSize}", size_, newCapacity, static_cast<uint32_t>(sizeof(Type)));
 			}
 			// 失敗は戻り値で呼ぶ側へ伝える（止めない）
 			if (newBegin == nullptr)
