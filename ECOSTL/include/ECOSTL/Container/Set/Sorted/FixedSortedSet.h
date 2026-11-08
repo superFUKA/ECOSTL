@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstdint>
 #include "ECOSTL/Container/Array/View/ArrayView.h"
+#include "ECOSTL/Algorithm/Search/BinarySearch.h"
 #include "ECOSTL/Core/Hash/Hash.h"
 
 // 汎用ユーティリティ名前空間
@@ -70,8 +71,7 @@ namespace utl
 		/// <summary>値が何番目にあるかを二分探索で求める。含まなければUINT32_MAX</summary>
 		inline uint32_t Find(const T value)const
 		{
-			const uint32_t index = LowerBound(value);
-			return index < size_ && items_[index] == value ? index : UINT32_MAX;
+			return utl::BinaryFind(items_, size_, value);
 		}
 
 		inline void Clear()
@@ -142,21 +142,7 @@ namespace utl
 		// value以上の値が最初に現れる添え字を求める
 		uint32_t LowerBound(const T value)const
 		{
-			uint32_t left = 0;
-			uint32_t right = size_;
-			while (left < right)
-			{
-				const uint32_t mid = left + ((right - left) >> 1);
-				if (items_[mid] < value)
-				{
-					left = mid + 1;
-				}
-				else
-				{
-					right = mid;
-				}
-			}
-			return left;
+			return utl::LowerBound(items_, size_, value);
 		}
 
 	private:

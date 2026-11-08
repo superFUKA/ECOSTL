@@ -3,6 +3,7 @@
 // 追加・削除は挿入位置以降をずらす O(N)、検索は二分探索 O(log N)。
 // 昇順で持つため、同じ集合なら追加順に関係なく同じ並び・同じハッシュ値になる。
 #include "ECOSTL/Container/Vector/Vector.h"
+#include "ECOSTL/Algorithm/Search/BinarySearch.h"
 #include "ECOSTL/Core/Hash/Hash.h"
 #include <cstdint>
 
@@ -62,8 +63,7 @@ namespace utl
 		/// <summary>値が何番目にあるかを二分探索で求める。含まなければUINT32_MAX</summary>
 		inline uint32_t Find(const T value)const
 		{
-			uint32_t index = LowerBound(value);
-			return index < items_.Size() && items_[index] == value ? index : UINT32_MAX;
+			return utl::BinaryFind(items_.Begin(), items_.Size(), value);
 		}
 
 		void Clear()
@@ -124,21 +124,7 @@ namespace utl
 		// value以上の値が最初に現れる添え字を求める
 		uint32_t LowerBound(const T value)const
 		{
-			uint32_t left = 0;
-			uint32_t right = items_.Size();
-			while (left < right)
-			{
-				uint32_t mid = left + ((right - left) >> 1);
-				if (items_[mid] < value)
-				{
-					left = mid + 1;
-				}
-				else
-				{
-					right = mid;
-				}
-			}
-			return left;
+			return utl::LowerBound(items_.Begin(), items_.Size(), value);
 		}
 
 	private:
