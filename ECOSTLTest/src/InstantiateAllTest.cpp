@@ -25,6 +25,11 @@ template class utl::UniquePtr<int[]>;
 template class utl::SharedPtr<int>;
 template struct utl::Tuple<int, float>;
 
+// Math 層は関数と POD だけなので、ECOSTL.hpp から全部読み込めることを確かめる
+static_assert(sizeof(utl::Float3) == sizeof(float) * 3);
+static_assert(sizeof(utl::Quat) == sizeof(float) * 4);
+static_assert(sizeof(utl::Mat4) == sizeof(float) * 16);
+
 // 実体化がコンパイルできれば十分。実行時に確かめることは無い
 TEST(InstantiateAll, Compiles)
 {
