@@ -28,3 +28,17 @@
 	#define UTL_NOINLINE
 	#define UTL_PREFETCH(address) ((void)(address))
 #endif
+
+// UTL_CPU_PAUSE : 回って待つループの中で呼ぶ 同じコアのもう片方の論理CPUに譲り、ループを抜けるときの遅れを減らす
+//                 対応していない環境では何もしない
+#if defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))
+	#define UTL_CPU_PAUSE() _mm_pause()
+#elif defined(_MSC_VER) && (defined(_M_ARM64) || defined(_M_ARM))
+	#define UTL_CPU_PAUSE() __yield()
+#elif defined(__x86_64__) || defined(__i386__)
+	#define UTL_CPU_PAUSE() __builtin_ia32_pause()
+#elif defined(__aarch64__) || defined(__arm__)
+	#define UTL_CPU_PAUSE() __asm__ volatile("yield")
+#else
+	#define UTL_CPU_PAUSE() ((void)0)
+#endif
