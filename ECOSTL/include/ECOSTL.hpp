@@ -7,4 +7,7 @@
 #include "ECOSTL/Algorithm/Algorithm.hpp"
 #include "ECOSTL/Container/Container.hpp"
 #include "ECOSTL/Concurrency/WorkStage.h"
+#include "ECOSTL/Concurrency/PartRange.h"
+#include "ECOSTL/Concurrency/BucketPartition.h"
+#include "ECOSTL/Concurrency/PartBuffers.h"
 #include "ECOSTL/Utility/Utility.hpp"
