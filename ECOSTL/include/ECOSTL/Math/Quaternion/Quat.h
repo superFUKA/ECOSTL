@@ -1,5 +1,6 @@
 #pragma once
-// 回転を表すクォータニオン Quat(POD・確保しない)と、その演算(積・共役・正規化・軸角・ベクトルの回転・向きから作る・補間)。
+// 回転を表すクォータニオン Quat(POD・確保しない)と、その演算(積・共役・内積・正規化・ベクトルの回転・補間)。
+// 作る関数(回転なし・軸角・基底から・向きから)は Quat の static 関数、演算は Float3 と同じく型名を付けない関数にする。
 // testGame の gameLib/Math/MathTypes.h と RigidTransform.h(ベクトルの回転の式)から移植した。
 #include <cmath>
 
@@ -16,12 +17,31 @@ namespace utl
 	{
 		// 四元数の成分(x,y,z が虚部、w が実部)
 		float x, y, z, w;
-	};
 
-	/// <summary>
-	/// 回転なしのクォータニオン
-	/// </summary>
-	constexpr Quat QuatIdentity() { return { 0.0f, 0.0f, 0.0f, 1.0f }; }
+		/// <summary>
+		/// 回転なし
+		/// </summary>
+		static constexpr Quat Identity() { return { 0.0f, 0.0f, 0.0f, 1.0f }; }
+
+		/// <summary>
+		/// 軸 axis(単位ベクトル)まわりに angle ラジアン回す
+		/// </summary>
+		static Quat FromAxisAngle(Float3 axis, float angle);
+
+		/// <summary>
+		/// 回転行列の3つの列(どれも単位長で互いに直交する右手系の基底)から作る。
+		/// 列はそれぞれローカルの +X・+Y・+Z が回した後に向く方向
+		/// </summary>
+		static Quat FromBasis(Float3 xAxis, Float3 yAxis, Float3 zAxis);
+
+		/// <summary>
+		/// ローカルの +Z を forward に向け、+Y をできるだけ up に寄せる回転。
+		/// forward がほぼ 0 なら回転なし。forward と up が平行なら、+X が forward に垂直な向き(X 軸寄り、だめなら Z 軸寄り)になるよう決める
+		/// </summary>
+		/// <param name="forward">向けたい方向(長さは問わない)</param>
+		/// <param name="up">上の目安(長さは問わない。既定は +Y)</param>
+		static Quat LookRotation(Float3 forward, Float3 up = { 0.0f, 1.0f, 0.0f });
+	};
 
 	/// <summary>
 	/// 回転の合成。a * b は「b で回してから a で回す」
@@ -38,31 +58,21 @@ namespace utl
 	/// <summary>
 	/// 共役。単位クォータニオンなら逆回転になる
 	/// </summary>
-	constexpr Quat QuatConjugate(Quat q) { return { -q.x, -q.y, -q.z, q.w }; }
+	constexpr Quat Conjugate(Quat q) { return { -q.x, -q.y, -q.z, q.w }; }
 
 	/// <summary>
 	/// 内積(2つの回転の近さ。単位クォータニオン同士なら -1..1)
 	/// </summary>
-	constexpr float QuatDot(Quat a, Quat b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
+	constexpr float Dot(Quat a, Quat b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
 
 	/// <summary>
 	/// 単位長にする。長さがほぼ 0 のときは割らずにそのまま返す
 	/// </summary>
-	inline Quat QuatNormalize(Quat q)
+	inline Quat Normalize(Quat q)
 	{
-		const float l = std::sqrt(QuatDot(q, q));
+		const float l = std::sqrt(Dot(q, q));
 		const float inv = l > 1e-12f ? 1.0f / l : 1.0f;
 		return { q.x * inv, q.y * inv, q.z * inv, q.w * inv };
-	}
-
-	/// <summary>
-	/// 軸 axis(単位ベクトル)まわりに angle ラジアン回すクォータニオン
-	/// </summary>
-	inline Quat QuatAxisAngle(Float3 axis, float angle)
-	{
-		const float h = angle * 0.5f;
-		const float s = std::sin(h);
-		return { axis.x * s, axis.y * s, axis.z * s, std::cos(h) };
 	}
 
 	/// <summary>
@@ -77,10 +87,23 @@ namespace utl
 	}
 
 	/// <summary>
-	/// 回転行列の3つの列(どれも単位長で互いに直交する右手系の基底)からクォータニオンを作る。
-	/// 列はそれぞれローカルの +X・+Y・+Z が回した後に向く方向
+	/// 正規化した線形補間(nlerp)。t は 0..1。逆向きのクォータニオンは符号をそろえて近い側を通る。
+	/// 角速度は一定にならないが、角度が小さいときは slerp とほぼ同じで速い
 	/// </summary>
-	inline Quat QuatFromBasis(Float3 xAxis, Float3 yAxis, Float3 zAxis)
+	inline Quat Nlerp(Quat a, Quat b, float t)
+	{
+		const float sgn = Dot(a, b) < 0.0f ? -1.0f : 1.0f;
+		return Normalize(Quat{ Lerp(a.x, b.x * sgn, t), Lerp(a.y, b.y * sgn, t), Lerp(a.z, b.z * sgn, t), Lerp(a.w, b.w * sgn, t) });
+	}
+
+	inline Quat Quat::FromAxisAngle(Float3 axis, float angle)
+	{
+		const float h = angle * 0.5f;
+		const float s = std::sin(h);
+		return { axis.x * s, axis.y * s, axis.z * s, std::cos(h) };
+	}
+
+	inline Quat Quat::FromBasis(Float3 xAxis, Float3 yAxis, Float3 zAxis)
 	{
 		const float m00 = xAxis.x, m01 = yAxis.x, m02 = zAxis.x;
 		const float m10 = xAxis.y, m11 = yAxis.y, m12 = zAxis.y;
@@ -107,21 +130,15 @@ namespace utl
 			const float s = std::sqrt(1.0f + m22 - m00 - m11) * 2.0f;
 			q = { (m02 + m20) / s, (m12 + m21) / s, 0.25f * s, (m10 - m01) / s };
 		}
-		return QuatNormalize(q);
+		return Normalize(q);
 	}
 
-	/// <summary>
-	/// ローカルの +Z を forward に向け、+Y をできるだけ up に寄せる回転。
-	/// forward がほぼ 0 なら回転なし。forward と up が平行なら、+X が forward に垂直な向き(X 軸寄り、だめなら Z 軸寄り)になるよう決める
-	/// </summary>
-	/// <param name="forward">向けたい方向(長さは問わない)</param>
-	/// <param name="up">上の目安(長さは問わない。既定は +Y)</param>
-	inline Quat QuatLookRotation(Float3 forward, Float3 up = { 0.0f, 1.0f, 0.0f })
+	inline Quat Quat::LookRotation(Float3 forward, Float3 up)
 	{
 		const Float3 f = Normalize(forward);
 		if (LengthSq(f) < 0.5f)
 		{
-			return QuatIdentity();
+			return Identity();
 		}
 		Float3 right = Cross(up, f);
 		if (LengthSq(right) < 1e-8f)
@@ -132,16 +149,6 @@ namespace utl
 		}
 		right = Normalize(right);
 		const Float3 trueUp = Cross(f, right);
-		return QuatFromBasis(right, trueUp, f);
-	}
-
-	/// <summary>
-	/// 正規化した線形補間(nlerp)。t は 0..1。逆向きのクォータニオンは符号をそろえて近い側を通る。
-	/// 角速度は一定にならないが、角度が小さいときは slerp とほぼ同じで速い
-	/// </summary>
-	inline Quat QuatNlerp(Quat a, Quat b, float t)
-	{
-		const float sgn = QuatDot(a, b) < 0.0f ? -1.0f : 1.0f;
-		return QuatNormalize({ Lerp(a.x, b.x * sgn, t), Lerp(a.y, b.y * sgn, t), Lerp(a.z, b.z * sgn, t), Lerp(a.w, b.w * sgn, t) });
+		return FromBasis(right, trueUp, f);
 	}
 }

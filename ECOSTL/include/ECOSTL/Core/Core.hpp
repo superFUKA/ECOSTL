@@ -1,6 +1,7 @@
 #pragma once
-// Core 層（最下層）: プラットフォーム差の吸収・ハッシュ・関数オブジェクト・型特性とテンプレート補助・値の組・原子的な計数・メモリの写し・数学
+// Core 層（最下層）: プラットフォーム差の吸収・SIMD のレーン・ハッシュ・関数オブジェクト・型特性とテンプレート補助・値の組・原子的な計数・メモリの写し・数学
 #include "Platform/Platform.h"
+#include "Simd/SimdLanes.h"
 #include "Hash/Hash.h"
 #include "Function/Function.h"
 #include "Template/TypeTraits.h"

@@ -1,5 +1,5 @@
 // ヘッダー単体でコンパイルできることを確かめるため、最初に読み込む
-#include "ECOSTL/Math/Simd/SimdLanes.h"
+#include "ECOSTL/Core/Simd/SimdLanes.h"
 
 #include <gtest/gtest.h>
 
@@ -149,7 +149,7 @@ namespace
 		utl::simd::StoreLanes(z, oz);
 	}
 
-	void F8Rows4RoundTrip(const float* rows, float* dst, int stride, float* secondComponent)
+	void F8Rows4RoundTrip(const float* rows, float* dst, uint32_t stride, float* secondComponent)
 	{
 		using utl::simd::F8;
 		F8 a, b, c, d;

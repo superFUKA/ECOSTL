@@ -101,7 +101,7 @@ namespace utl::simd
 	struct F4
 	{
 		// レーン数
-		static constexpr int N = 4;
+		static constexpr uint32_t N = 4;
 		// 4レーン分の値(SSE レジスタ)
 		__m128 v;
 		F4() = default;
@@ -146,7 +146,7 @@ namespace utl::simd
 		a = r0; b = r1; c = r2; d = r3;
 	}
 	// LoadRows4 の逆。各レーン k の {a[k],b[k],c[k],d[k]} を dst + k*strideFloats に書く
-	inline void StoreRows4(float* dst, const int strideFloats, F4 a, F4 b, F4 c, F4 d)
+	inline void StoreRows4(float* dst, const uint32_t strideFloats, F4 a, F4 b, F4 c, F4 d)
 	{
 		__m128 r0 = a.v, r1 = b.v, r2 = c.v, r3 = d.v;
 		_MM_TRANSPOSE4_PS(r0, r1, r2, r3);
@@ -160,7 +160,7 @@ namespace utl::simd
 	struct F8
 	{
 		// レーン数
-		static constexpr int N = 8;
+		static constexpr uint32_t N = 8;
 		// 8レーン分の値(AVX レジスタ)
 		__m256 v;
 		F8() = default;
@@ -222,7 +222,7 @@ namespace utl::simd
 		a = r0; b = r1; c = r2; d = r3;
 	}
 	// LoadRows4 の逆。a..d を 8 個分の4要素に戻して dst へ書く(要素と要素の間隔は s 個の float)
-	inline void StoreRows4(float* dst, const int s, F8 a, F8 b, F8 c, F8 d)
+	inline void StoreRows4(float* dst, const uint32_t s, F8 a, F8 b, F8 c, F8 d)
 	{
 		__m256 r0 = a.v, r1 = b.v, r2 = c.v, r3 = d.v;
 		detail::Transpose4InLane(r0, r1, r2, r3);

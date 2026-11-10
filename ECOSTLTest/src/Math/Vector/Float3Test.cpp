@@ -30,12 +30,23 @@ TEST(Float3, ArithmeticIsConstexpr) {
 	static_assert(utl::LengthSq(a) == 14.0f);
 }
 
+TEST(Float3, IsPlainThreeFloats) {
+	static_assert(sizeof(utl::Float3) == sizeof(float) * 3);
+}
+
+TEST(Float3, Division) {
+	constexpr utl::Float3 d = utl::Float3{ 2.0f, -4.0f, 6.0f } / 2.0f;
+	static_assert(d.x == 1.0f && d.y == -2.0f && d.z == 3.0f);
+}
+
 TEST(Float3, CompoundAssignment) {
 	utl::Float3 v{ 1.0f, 1.0f, 1.0f };
 	v += { 1.0f, 2.0f, 3.0f };
 	v -= { 0.5f, 0.5f, 0.5f };
 	v *= 2.0f;
 	ExpectNear(v, { 3.0f, 5.0f, 7.0f });
+	v /= 4.0f;
+	ExpectNear(v, { 0.75f, 1.25f, 1.75f });
 }
 
 TEST(Float3, CrossIsRightHanded) {

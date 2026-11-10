@@ -1,6 +1,7 @@
 #pragma once
 // 剛体の変換 RigidTransform(位置 + 単位クォータニオンの回転。拡大縮小なし)と、その合成・逆・点の変換。
 // 世界 = 親の世界 × ローカル(位置 = 親の位置 + 親の回転 × ローカルの位置、回転 = 親の回転 × ローカルの回転)。
+// 行列にするときは Mat4::FromRigidTransform。
 // testGame の gameLib/Math/RigidTransform.h の式を、型を決めた形にして移植した(ECS の部品の型に合わせるテンプレートは gameLib に残す)。
 #include "ECOSTL/Math/Quaternion/Quat.h"
 #include "ECOSTL/Math/Vector/Float3.h"
@@ -17,12 +18,12 @@ namespace utl
 		Float3 position;
 		// 回転(単位クォータニオン)
 		Quat rotation;
-	};
 
-	/// <summary>
-	/// 何もしない変換
-	/// </summary>
-	constexpr RigidTransform RigidTransformIdentity() { return { { 0.0f, 0.0f, 0.0f }, QuatIdentity() }; }
+		/// <summary>
+		/// 何もしない変換
+		/// </summary>
+		static constexpr RigidTransform Identity() { return { { 0.0f, 0.0f, 0.0f }, Quat::Identity() }; }
+	};
 
 	/// <summary>
 	/// 点 p を変換する(rotation で回してから position を足す)
@@ -45,7 +46,7 @@ namespace utl
 	/// </summary>
 	constexpr RigidTransform Inverse(const RigidTransform& t)
 	{
-		const Quat inv = QuatConjugate(t.rotation);
+		const Quat inv = Conjugate(t.rotation);
 		return { Rotate(inv, -t.position), inv };
 	}
 }

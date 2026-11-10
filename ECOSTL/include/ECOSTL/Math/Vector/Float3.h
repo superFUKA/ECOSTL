@@ -20,9 +20,12 @@ namespace utl
 	constexpr Float3 operator-(Float3 a) { return { -a.x, -a.y, -a.z }; }
 	constexpr Float3 operator*(Float3 a, float s) { return { a.x * s, a.y * s, a.z * s }; }
 	constexpr Float3 operator*(float s, Float3 a) { return { a.x * s, a.y * s, a.z * s }; }
+	// s で割る(s = 0 は呼ぶ側で避ける)
+	constexpr Float3 operator/(Float3 a, float s) { return { a.x / s, a.y / s, a.z / s }; }
 	constexpr Float3& operator+=(Float3& a, Float3 b) { a = a + b; return a; }
 	constexpr Float3& operator-=(Float3& a, Float3 b) { a = a - b; return a; }
 	constexpr Float3& operator*=(Float3& a, float s) { a = a * s; return a; }
+	constexpr Float3& operator/=(Float3& a, float s) { a = a / s; return a; }
 
 	/// <summary>
 	/// 内積

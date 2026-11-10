@@ -15,7 +15,7 @@ namespace
 	void ExpectSameTransform(const utl::RigidTransform& actual, const utl::RigidTransform& expected, float eps = 1e-5f)
 	{
 		ExpectNear(actual.position, expected.position, eps);
-		const float sgn = utl::QuatDot(actual.rotation, expected.rotation) < 0.0f ? -1.0f : 1.0f;
+		const float sgn = utl::Dot(actual.rotation, expected.rotation) < 0.0f ? -1.0f : 1.0f;
 		EXPECT_NEAR(actual.rotation.x * sgn, expected.rotation.x, eps);
 		EXPECT_NEAR(actual.rotation.y * sgn, expected.rotation.y, eps);
 		EXPECT_NEAR(actual.rotation.z * sgn, expected.rotation.z, eps);
@@ -44,33 +44,33 @@ namespace
 }
 
 TEST(RigidTransform, IdentityDoesNothing) {
-	constexpr utl::RigidTransform i = utl::RigidTransformIdentity();
+	constexpr utl::RigidTransform i = utl::RigidTransform::Identity();
 	constexpr utl::Float3 p = utl::TransformPoint(i, { 1.0f, 2.0f, 3.0f });
 	static_assert(p.x == 1.0f && p.y == 2.0f && p.z == 3.0f);
 }
 
 TEST(RigidTransform, TransformPointRotatesThenTranslates) {
-	const utl::RigidTransform t{ { 10.0f, 0.0f, 0.0f }, utl::QuatAxisAngle({ 0.0f, 0.0f, 1.0f }, utl::PI * 0.5f) };
+	const utl::RigidTransform t{ { 10.0f, 0.0f, 0.0f }, utl::Quat::FromAxisAngle({ 0.0f, 0.0f, 1.0f }, utl::PI * 0.5f) };
 	ExpectNear(utl::TransformPoint(t, { 1.0f, 0.0f, 0.0f }), { 10.0f, 1.0f, 0.0f });
 }
 
 TEST(RigidTransform, ComposeMatchesTestGame) {
-	const utl::RigidTransform parent{ { 1.0f, -2.0f, 3.0f }, utl::QuatAxisAngle(utl::Normalize({ 1.0f, 2.0f, -1.0f }), 0.9f) };
-	const utl::RigidTransform local{ { -0.5f, 4.0f, 2.0f }, utl::QuatAxisAngle(utl::Normalize({ 0.0f, 1.0f, 3.0f }), -1.3f) };
+	const utl::RigidTransform parent{ { 1.0f, -2.0f, 3.0f }, utl::Quat::FromAxisAngle(utl::Normalize(utl::Float3{ 1.0f, 2.0f, -1.0f }), 0.9f) };
+	const utl::RigidTransform local{ { -0.5f, 4.0f, 2.0f }, utl::Quat::FromAxisAngle(utl::Normalize(utl::Float3{ 0.0f, 1.0f, 3.0f }), -1.3f) };
 	ExpectSameTransform(utl::Compose(parent, local), ComposeWorldReference(parent, local));
 }
 
 TEST(RigidTransform, ComposeEqualsApplyingInOrder) {
-	const utl::RigidTransform parent{ { 0.0f, 5.0f, 0.0f }, utl::QuatAxisAngle({ 0.0f, 1.0f, 0.0f }, 0.4f) };
-	const utl::RigidTransform local{ { 1.0f, 0.0f, 2.0f }, utl::QuatAxisAngle({ 1.0f, 0.0f, 0.0f }, 1.1f) };
+	const utl::RigidTransform parent{ { 0.0f, 5.0f, 0.0f }, utl::Quat::FromAxisAngle({ 0.0f, 1.0f, 0.0f }, 0.4f) };
+	const utl::RigidTransform local{ { 1.0f, 0.0f, 2.0f }, utl::Quat::FromAxisAngle({ 1.0f, 0.0f, 0.0f }, 1.1f) };
 	const utl::Float3 p{ 0.3f, -0.7f, 1.5f };
 	ExpectNear(utl::TransformPoint(utl::Compose(parent, local), p), utl::TransformPoint(parent, utl::TransformPoint(local, p)));
 }
 
 TEST(RigidTransform, InverseUndoes) {
-	const utl::RigidTransform t{ { 2.0f, -1.0f, 4.0f }, utl::QuatAxisAngle(utl::Normalize({ 1.0f, 1.0f, 1.0f }), 2.0f) };
-	ExpectSameTransform(utl::Compose(t, utl::Inverse(t)), utl::RigidTransformIdentity());
-	ExpectSameTransform(utl::Compose(utl::Inverse(t), t), utl::RigidTransformIdentity());
+	const utl::RigidTransform t{ { 2.0f, -1.0f, 4.0f }, utl::Quat::FromAxisAngle(utl::Normalize(utl::Float3{ 1.0f, 1.0f, 1.0f }), 2.0f) };
+	ExpectSameTransform(utl::Compose(t, utl::Inverse(t)), utl::RigidTransform::Identity());
+	ExpectSameTransform(utl::Compose(utl::Inverse(t), t), utl::RigidTransform::Identity());
 	const utl::Float3 p{ 5.0f, 6.0f, 7.0f };
 	ExpectNear(utl::TransformPoint(utl::Inverse(t), utl::TransformPoint(t, p)), p, 1e-4f);
 }
