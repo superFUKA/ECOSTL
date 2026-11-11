@@ -24,9 +24,9 @@
 #define UTL_LOG_WARN(...) ECO_LOG_WARN(__VA_ARGS__)
 #define UTL_LOG_ERROR(...) ECO_LOG_ERROR(__VA_ARGS__)
 #define UTL_LOG_FATAL(...) ECO_LOG_FATAL(__VA_ARGS__)
-#define UTL_ASSERT(...) ECO_ASSERT(__VA_ARGS__)
 // MSVC の従来のプリプロセッサは __VA_ARGS__ を1つの引数として渡すため、展開をもう1段挟んで引数に分け直す
 #define UTL_LOG_EXPAND_(x) x
+#define UTL_ASSERT(...) UTL_LOG_EXPAND_(ECO_ASSERT(__VA_ARGS__))
 #define UTL_LOG(...) UTL_LOG_EXPAND_(ECO_LOG(__VA_ARGS__))
 #define UTL_LOG_ONCE(...) UTL_LOG_EXPAND_(ECO_LOG_ONCE(__VA_ARGS__))
 

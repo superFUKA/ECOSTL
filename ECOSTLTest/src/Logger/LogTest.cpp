@@ -77,3 +77,31 @@ TEST(Log, AllocatorWritesMemoryLog)
 	EXPECT_NE(text.find("確保に失敗"), std::string::npos);
 	EXPECT_NE(text.find("1234"), std::string::npos);
 }
+
+// UTL_ASSERT が、条件だけ・書式つき・引数つきのどれでも書けて、失敗がログ（型 assert）に残る
+TEST(Log, UtlAssertWritesAssertLog)
+{
+	lg::Config config;
+	config.directory = "ecostl-log-test";
+	config.stem = "ECOSTLAssertLogTest";
+	// 失敗しても止めずに続ける（止める・落とすは使う側が選ぶ）
+	config.assertAction = lg::AssertAction::Continue;
+	ASSERT_TRUE(lg::start(config));
+
+	const int size = 3;
+	const int index = 7;
+	UTL_ASSERT(size == 3);
+	UTL_ASSERT(index < 10, "ここは通る");
+	UTL_ASSERT(index < size, "番号が範囲の外 index={index} size={size}", index, size);
+
+	lg::writeOut();
+	lg::stop();
+
+	const char* path = lg::latestLog(config.directory);
+	ASSERT_NE(path, nullptr);
+	std::string text;
+	ASSERT_TRUE(lg::readLog(path, lg::ViewFormat::Json, lg::ViewFilter{}, &AppendText, &text));
+	EXPECT_NE(text.find("番号が範囲の外"), std::string::npos);
+	EXPECT_NE(text.find("index < size"), std::string::npos);
+	EXPECT_EQ(text.find("ここは通る"), std::string::npos);
+}
