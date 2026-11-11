@@ -54,6 +54,15 @@ static_assert(utl::IsLvalueReferenceV<const int&>);
 static_assert(!utl::IsLvalueReferenceV<int>);
 static_assert(!utl::IsLvalueReferenceV<int&&>);
 
+static_assert(utl::IsUnsignedV<unsigned int>);
+static_assert(utl::IsUnsignedV<const unsigned char>);
+static_assert(utl::IsUnsignedV<unsigned long long>);
+static_assert(!utl::IsUnsignedV<int>);
+static_assert(!utl::IsUnsignedV<signed char>);
+static_assert(!utl::IsUnsignedV<float>);
+// 整数でない型は false(コンパイルエラーにならない)
+static_assert(!utl::IsUnsignedV<Base>);
+
 //----------------------------------------
 // 変換
 //----------------------------------------

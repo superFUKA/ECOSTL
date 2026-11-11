@@ -115,4 +115,18 @@ namespace utl
 		((result = Hash64FromType<Types>(src, result)), ...);
 		return result;
 	}
+
+	/// <summary>
+	/// 32bit の整数をよく混ぜた 32bit の値にする(lowbias32。xor とシフトと掛け算を3回)。
+	/// 入力の近い値(連番など)がばらばらの値になるので、状態を持たない乱数の元に使える
+	/// </summary>
+	/// <param name="x"></param>
+	/// <returns></returns>
+	constexpr uint32_t Hash32Mix(uint32_t x) noexcept
+	{
+		x ^= x >> 16; x *= 0x7feb352dU;
+		x ^= x >> 15; x *= 0x846ca68bU;
+		x ^= x >> 16;
+		return x;
+	}
 }

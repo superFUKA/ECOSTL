@@ -162,6 +162,26 @@ namespace utl
 	template<typename T>
 	inline constexpr bool IsFloatingPointV = detail::IsFloatingPointImpl<RemoveCVType<T>>;
 
+	namespace detail
+	{
+		template<typename T>
+		constexpr bool IsUnsignedImpl()
+		{
+			if constexpr (IsIntegralV<T>)
+			{
+				return static_cast<T>(-1) > static_cast<T>(0);
+			}
+			else
+			{
+				return false;
+			}
+		}
+	}
+
+	// 符号なしの整数型か（bool も含む。-1 を変換すると 0 より大きくなる整数型）
+	template<typename T>
+	inline constexpr bool IsUnsignedV = detail::IsUnsignedImpl<RemoveCVType<T>>();
+
 	//----------------------------------------
 	// 型の性質（コンパイラの組み込み関数。MSVC・clang・GCC で使える）
 	//----------------------------------------
