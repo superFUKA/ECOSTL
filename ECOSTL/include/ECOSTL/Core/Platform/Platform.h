@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 //=========================================================
 // コンパイラやCPUの違いを吸収するマクロ
@@ -42,3 +43,14 @@
 #else
 	#define UTL_CPU_PAUSE() ((void)0)
 #endif
+
+// ecoSTL の共通名前空間
+namespace utl
+{
+	/// <summary>
+	/// キャッシュラインの大きさ(バイト。x64 と、今の主な ARM64 の CPU は 64)。
+	/// 別々のスレッドが書く物を、配列で隣り合わせても同じラインに乗らないように揃える(偽共有を避ける。alignas(utl::CACHE_LINE_SIZE))。
+	/// std::hardware_destructive_interference_size は、コンパイラの設定で値が変わりうる(変わると型の大きさ・並びが変わる)ので、決まった値を 1 か所に置く
+	/// </summary>
+	inline constexpr uint32_t CACHE_LINE_SIZE = 64;
+}
