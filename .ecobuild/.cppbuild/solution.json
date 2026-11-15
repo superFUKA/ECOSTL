@@ -17,28 +17,28 @@
     "git_sources": {
       "ECOCppLogger": {
         "path": ".ecobuild/.cppbuild",
-        "revision": "39a33e4023713908ca779b3d34e23974f37cb450",
+        "revision": "011bad40aa0ed04f3a4c829b55dae303e33f5a2f",
         "url": "https://github.com/superFUKA/ECOCppLogger.git"
       }
     },
-    "main_project": "ECOSTL",
+    "main_subproject": "ECOSTL",
     "name": "ECOSTL",
-    "projects": {
-      "ECOSTL": "../../ECOSTL",
-      "ECOSTLTest": "../../ECOSTLTest"
-    },
     "references": {
       "ec41152a-a7e6-4c4d-b618-61a7fbd9b2cd": {
-        "project_guid": "ec41152a-a7e6-4c4d-b618-61a7fbd9b2cd",
-        "solution_directory": "../../deps/ECOCppLogger/.ecobuild/.cppbuild"
+        "solution_directory": "../../deps/ECOCppLogger/.ecobuild/.cppbuild",
+        "subproject_guid": "ec41152a-a7e6-4c4d-b618-61a7fbd9b2cd"
       }
     },
     "solution_folders": {
-      "linked_projects": "LinkedProjects",
-      "project_folders": {},
-      "projects": "Projects"
+      "linked_subprojects": "LinkedSubprojects",
+      "subproject_folders": {},
+      "subprojects": "Subprojects"
+    },
+    "subprojects": {
+      "ECOSTL": "../../ECOSTL",
+      "ECOSTLTest": "../../ECOSTLTest"
     }
   },
   "kind": "solution",
-  "schema_version": 5
+  "schema_version": 6
 }
